@@ -80,14 +80,23 @@ def clean_history(raw):
     return cleaned
 
 
+RETRY_STATUS = {500, 503}   # Google 서버가 바쁘거나 일시적인 오류일 때
+RETRY_WAITS = [1, 2]        # 실패하면 1초, 2초 쉬었다가 다시 시도 (최대 2번 더)
+
+
 def call_gemini(api_key, payload):
-    """Gemini API에 요청을 보내요."""
-    return requests.post(
-        GEMINI_URL.format(model=MODEL),
-        headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
-        json=payload,
-        timeout=20,
-    )
+    """Gemini API에 요청을 보내요. 서버가 바쁘다고(503) 하면 잠깐 쉬었다가 다시 시도해요."""
+    for attempt in range(len(RETRY_WAITS) + 1):
+        res = requests.post(
+            GEMINI_URL.format(model=MODEL),
+            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+            json=payload,
+            timeout=15,
+        )
+        if res.status_code not in RETRY_STATUS or attempt == len(RETRY_WAITS):
+            return res
+        print(f"Gemini {res.status_code}, retrying in {RETRY_WAITS[attempt]}s (attempt {attempt + 1})")
+        time.sleep(RETRY_WAITS[attempt])
 
 
 class handler(BaseHTTPRequestHandler):
@@ -143,6 +152,8 @@ class handler(BaseHTTPRequestHandler):
 
         if res.status_code == 429:
             return self._send(429, {"error": "무료 사용량을 잠시 다 썼어요. 1분쯤 뒤에 다시 시도해 주세요."})
+        if res.status_code == 503:
+            return self._send(503, {"error": "지금 AI가 너무 붐벼요. 잠시 후 다시 시도하기를 눌러주세요."})
         if res.status_code != 200:
             print("Gemini API error:", res.status_code, res.text[:500])  # Vercel 로그에서 확인 가능
             return self._send(502, {"error": "AI 서버에 문제가 생겼어요. 잠시 후 다시 시도해 주세요."})
