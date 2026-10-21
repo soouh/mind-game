@@ -41,7 +41,7 @@ API 키는 코드에 절대 넣지 않고 Vercel 환경 변수로 관리합니�
 | 이름 | 값 |
 |---|---|
 | `GEMINI_API_KEY` | Google AI Studio에서 발급받은 API 키 (필수) |
-| `GEMINI_MODEL` | 사용할 모델 이름 (선택, 기본값 `gemini-2.5-flash`) |
+| `GEMINI_MODEL` | 사용할 모델 이름 (선택, 기본값 `gemini-3.1-flash-lite`) |
 
 설정 방법: Vercel 프로젝트 → Settings → Environment Variables → 위 이름과 값을 추가 → 재배포(Redeploy)
 

@@ -8,11 +8,12 @@
 from http.server import BaseHTTPRequestHandler
 import json
 import os
+import time
 
 import requests
 
 # 사용할 모델. Vercel 환경 변수 GEMINI_MODEL 로 바꿀 수 있어요. (없으면 기본값 사용)
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite")
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 MAX_QUESTIONS = 20
 CATEGORIES = {"동물", "음식", "물건", "아무거나"}
@@ -79,6 +80,16 @@ def clean_history(raw):
     return cleaned
 
 
+def call_gemini(api_key, payload):
+    """Gemini API에 요청을 보내요."""
+    return requests.post(
+        GEMINI_URL.format(model=MODEL),
+        headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+        json=payload,
+        timeout=20,
+    )
+
+
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         # 1) 요청 읽기
@@ -102,26 +113,33 @@ class handler(BaseHTTPRequestHandler):
             return self._send(500, {"error": "서버에 API 키가 설정되지 않았어요. 관리자에게 알려주세요."})
 
         # 3) Gemini 호출
+        # 스무고개 질문은 깊이 생각할 필요가 없어서 "생각하기"를 최소로 줄여 속도를 높여요.
+        config = {
+            "responseMimeType": "application/json",  # JSON으로만 답하게 하기
+            "maxOutputTokens": 1024,
+            "temperature": 0.7,
+            "thinkingConfig": {"thinkingLevel": "minimal"},
+        }
+        payload = {
+            "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+            "contents": [{"role": "user", "parts": [{"text": build_prompt(category, history)}]}],
+            "generationConfig": config,
+        }
+        started = time.time()
         try:
-            res = requests.post(
-                GEMINI_URL.format(model=MODEL),
-                headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
-                json={
-                    "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-                    "contents": [{"role": "user", "parts": [{"text": build_prompt(category, history)}]}],
-                    "generationConfig": {
-                        "responseMimeType": "application/json",  # JSON으로만 답하게 하기
-                        "maxOutputTokens": 1024,
-                        "temperature": 0.7,
-                    },
-                },
-                timeout=25,
-            )
+            res = call_gemini(api_key, payload)
+            # 모델이 "minimal" 설정을 지원하지 않으면(400) 그 설정을 빼고 한 번 더 시도
+            if res.status_code == 400 and "thinking" in res.text.lower():
+                config.pop("thinkingConfig")
+                res = call_gemini(api_key, payload)
         except requests.Timeout:
+            print(f"Gemini timeout after {time.time() - started:.1f}s (model={MODEL})")
             return self._send(504, {"error": "AI 응답이 너무 늦어요. 다시 시도해 주세요."})
         except requests.RequestException as e:
             print("Network error:", repr(e))
             return self._send(502, {"error": "AI 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요."})
+
+        print(f"Gemini responded {res.status_code} in {time.time() - started:.1f}s (model={MODEL})")
 
         if res.status_code == 429:
             return self._send(429, {"error": "무료 사용량을 잠시 다 썼어요. 1분쯤 뒤에 다시 시도해 주세요."})
