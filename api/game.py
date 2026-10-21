@@ -1,16 +1,19 @@
 # =========================================
 # 내 마음이 들리니 - 백엔드 (Vercel Serverless Function, Python)
 # 주소: /api/game
-# 역할: 화면에서 받은 대화 기록을 Claude에게 보내고, 다음 질문을 돌려줘요.
-# API 키는 코드에 쓰지 않고 Vercel 환경 변수 ANTHROPIC_API_KEY 에서 꺼내 써요.
+# 역할: 화면에서 받은 대화 기록을 Google Gemini에게 보내고, 다음 질문을 돌려줘요.
+# API 키는 코드에 쓰지 않고 Vercel 환경 변수 GEMINI_API_KEY 에서 꺼내 써요.
+# (Gemini API 무료 등급 사용: 카드 등록 없이 하루 사용량 한도 안에서 무료)
 # =========================================
 from http.server import BaseHTTPRequestHandler
 import json
 import os
 
-import anthropic
+import requests
 
-MODEL = "claude-haiku-5-5"   # 빠르고 저렴한 모델
+# 사용할 모델. Vercel 환경 변수 GEMINI_MODEL 로 바꿀 수 있어요. (없으면 기본값 사용)
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 MAX_QUESTIONS = 20
 CATEGORIES = {"동물", "음식", "물건", "아무거나"}
 ANSWERS = {"예", "아니요", "모르겠어요"}
@@ -31,7 +34,7 @@ SYSTEM_PROMPT = """너는 스무고개 게임의 진행자야. 사용자가 마�
 
 
 def build_prompt(category, history):
-    """대화 기록을 Claude가 읽을 수 있는 글로 바꿔요."""
+    """대화 기록을 AI가 읽을 수 있는 글로 바꿔요."""
     if history:
         lines = [f"{i + 1}. {h['q']} → {h['a']}" for i, h in enumerate(history)]
         record = "\n".join(lines)
@@ -94,33 +97,45 @@ class handler(BaseHTTPRequestHandler):
         if history is None:
             return self._send(400, {"error": "게임 기록이 올바르지 않아요. 새로 시작해 주세요."})
 
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             return self._send(500, {"error": "서버에 API 키가 설정되지 않았어요. 관리자에게 알려주세요."})
 
-        # 3) Claude 호출
+        # 3) Gemini 호출
         try:
-            client = anthropic.Anthropic(api_key=api_key, timeout=25.0, max_retries=1)
-            message = client.messages.create(
-                model=MODEL,
-                max_tokens=200,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": build_prompt(category, history)}],
+            res = requests.post(
+                GEMINI_URL.format(model=MODEL),
+                headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+                json={
+                    "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+                    "contents": [{"role": "user", "parts": [{"text": build_prompt(category, history)}]}],
+                    "generationConfig": {
+                        "responseMimeType": "application/json",  # JSON으로만 답하게 하기
+                        "maxOutputTokens": 1024,
+                        "temperature": 0.7,
+                    },
+                },
+                timeout=25,
             )
-            text = "".join(b.text for b in message.content if b.type == "text")
-            result = parse_ai_reply(text)
-        except anthropic.APITimeoutError:
+        except requests.Timeout:
             return self._send(504, {"error": "AI 응답이 너무 늦어요. 다시 시도해 주세요."})
-        except anthropic.RateLimitError:
-            return self._send(429, {"error": "요청이 너무 많아요. 잠시 후 다시 시도해 주세요."})
-        except anthropic.APIStatusError as e:
-            print("Anthropic API error:", e.status_code, e.message)  # Vercel 로그에서 확인 가능
+        except requests.RequestException as e:
+            print("Network error:", repr(e))
+            return self._send(502, {"error": "AI 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요."})
+
+        if res.status_code == 429:
+            return self._send(429, {"error": "무료 사용량을 잠시 다 썼어요. 1분쯤 뒤에 다시 시도해 주세요."})
+        if res.status_code != 200:
+            print("Gemini API error:", res.status_code, res.text[:500])  # Vercel 로그에서 확인 가능
             return self._send(502, {"error": "AI 서버에 문제가 생겼어요. 잠시 후 다시 시도해 주세요."})
-        except (ValueError, json.JSONDecodeError):
+
+        try:
+            parts = res.json()["candidates"][0]["content"]["parts"]
+            text = "".join(p.get("text", "") for p in parts)
+            result = parse_ai_reply(text)
+        except (KeyError, IndexError, ValueError, json.JSONDecodeError):
+            print("Unexpected reply:", res.text[:500])
             return self._send(502, {"error": "AI가 엉뚱한 대답을 했어요. 다시 시도해 주세요."})
-        except Exception as e:
-            print("Unexpected error:", repr(e))
-            return self._send(500, {"error": "알 수 없는 오류가 생겼어요. 다시 시도해 주세요."})
 
         return self._send(200, result)
 
