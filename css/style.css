@@ -3,16 +3,18 @@
    색상은 여기 :root 에서 한 번에 바꿀 수 있어요.
    ========================================= */
 :root {
-  --wall: #2b1d14;       /* 공방 벽: 어두운 나무 */
-  --wall-deep: #1c120c;
-  --wood: #7a4a2a;       /* 작업대 나무 */
-  --wood-light: #a0683c;
-  --paper: #f4e4c1;      /* 주문서 종이 */
-  --ink: #3a2416;        /* 진한 글자/테두리 */
-  --lamp: #ffcf6b;       /* 스탠드 불빛 */
-  --leaf: #8fbf5a;       /* 응 버튼 */
-  --berry: #e86a5c;      /* 오류/아니 */
-  --muted: #c9ab85;      /* 흐린 글자 */
+  --cream: #fbf1e3;      /* 배경: 따뜻한 크림색 */
+  --cream-dot: #f3e1c9;  /* 배경 점무늬 */
+  --paper: #fffaf2;      /* 종이/대화창 */
+  --ink: #5a3a2a;        /* 글자·테두리: 부드러운 갈색 */
+  --muted: #9a7660;      /* 흐린 글자 */
+  --wood: #b9784a;       /* 원목 */
+  --peach: #f4a988;      /* 강조 1: 복숭아 */
+  --butter: #ffd98a;     /* 강조 2: 버터 */
+  --sage: #9cc59b;       /* 응 버튼 */
+  --rose: #f28482;       /* 아니 버튼 */
+  --error: #c9503c;      /* 오류 글자 */
+  --wait: #b5761c;       /* 기다림 안내 글자 */
 
   --px: 4px;             /* 도트 한 칸 크기 */
   --font: "Galmuri11", "Apple SD Gothic Neo", "Malgun Gothic", monospace;
@@ -26,10 +28,10 @@ html, body { margin: 0; }
 
 body {
   min-height: 100vh;
-  background-color: var(--wall-deep);
-  /* 나무 판자 무늬 */
-  background-image: repeating-linear-gradient(90deg, var(--wall) 0 46px, var(--wall-deep) 46px 50px);
-  color: var(--paper);
+  background-color: var(--cream);
+  background-image: radial-gradient(var(--cream-dot) 2px, transparent 2px);
+  background-size: 20px 20px;
+  color: var(--ink);
   font-family: var(--font);
   font-size: 1rem;
   line-height: 1.75;
@@ -37,9 +39,9 @@ body {
   word-break: keep-all;
 }
 
-a { color: var(--lamp); }
+a { color: var(--wood); }
 
-:focus-visible { outline: var(--px) solid var(--lamp); outline-offset: var(--px); }
+:focus-visible { outline: var(--px) solid var(--peach); outline-offset: var(--px); }
 
 /* 도트 느낌 테두리: 모서리가 깎인 픽셀 박스 */
 .pixel-box {
@@ -50,7 +52,7 @@ a { color: var(--lamp); }
     0 var(--px) 0 0 var(--ink),
     calc(var(--px) * -1) 0 0 0 var(--ink),
     var(--px) 0 0 0 var(--ink),
-    0 calc(var(--px) * 2) 0 0 rgba(0, 0, 0, 0.35);
+    0 calc(var(--px) * 2) 0 0 rgba(90, 58, 42, 0.18);
 }
 
 /* ---------- 상단 메뉴 ---------- */
@@ -67,9 +69,9 @@ a { color: var(--lamp); }
 .logo {
   font-family: var(--font-big);
   font-size: 1.25rem;
-  color: var(--lamp);
+  color: var(--ink);
   text-decoration: none;
-  text-shadow: 0 3px 0 #8a5a1c;
+  text-shadow: 0 3px 0 var(--peach);
 }
 
 .nav { display: flex; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
@@ -81,8 +83,8 @@ a { color: var(--lamp); }
   text-decoration: none;
 }
 
-.nav a:hover { color: var(--paper); }
-.nav a[aria-current="page"] { background: var(--wood); color: var(--paper); }
+.nav a:hover { color: var(--ink); }
+.nav a[aria-current="page"] { background: var(--butter); color: var(--ink); box-shadow: 0 0 0 3px var(--ink); }
 
 main { max-width: 1000px; margin: 0 auto; padding: 0.5rem 1.25rem 3rem; }
 
@@ -93,7 +95,7 @@ h1, h2 { font-family: var(--font-big); font-weight: 400; line-height: 1.35; }
   display: inline-block;
   border: 0;
   padding: 0.65rem 1.4rem;
-  background: var(--lamp);
+  background: var(--butter);
   color: var(--ink);
   font-family: var(--font-big);
   font-size: 1.05rem;
@@ -104,14 +106,14 @@ h1, h2 { font-family: var(--font-big); font-weight: 400; line-height: 1.35; }
     0 var(--px) 0 0 var(--ink),
     calc(var(--px) * -1) 0 0 0 var(--ink),
     var(--px) 0 0 0 var(--ink),
-    inset 0 calc(var(--px) * -1) 0 0 rgba(0, 0, 0, 0.25);
+    inset 0 calc(var(--px) * -1) 0 0 rgba(90, 58, 42, 0.18);
 }
 
 .btn:active { transform: translateY(2px); box-shadow: 0 0 0 var(--px) var(--ink); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn-yes { background: var(--leaf); }
-.btn-no { background: var(--berry); color: #fff4e6; }
-.btn-plain { background: var(--muted); }
+.btn-yes { background: var(--sage); }
+.btn-no { background: var(--rose); }
+.btn-plain { background: var(--paper); }
 
 /* ---------- 공방 그림(캔버스) ---------- */
 .workshop {
@@ -122,18 +124,18 @@ h1, h2 { font-family: var(--font-big); font-weight: 400; line-height: 1.35; }
   margin: 0 auto;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  box-shadow: 0 0 0 var(--px) var(--ink), 0 0 0 calc(var(--px) * 2) var(--wood);
+  box-shadow: 0 0 0 var(--px) var(--ink), 0 0 0 calc(var(--px) * 2) var(--peach), 0 0 0 calc(var(--px) * 3) var(--ink);
 }
 
 /* ---------- 메인 페이지 ---------- */
 .hero { text-align: center; padding: 1.5rem 0 1rem; }
-.hero h1 { margin: 1.75rem 0 0.25rem; font-size: clamp(1.8rem, 6vw, 2.8rem); color: var(--lamp); text-shadow: 0 4px 0 #8a5a1c; }
+.hero h1 { margin: 1.75rem 0 0.25rem; font-size: clamp(1.8rem, 6vw, 2.8rem); color: var(--ink); text-shadow: 0 4px 0 var(--peach); }
 .hero p { max-width: 36ch; margin: 0.5rem auto 1.75rem; color: var(--muted); }
 .hero-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 1.25rem; }
 
 /* ---------- 게임 방법 페이지 ---------- */
 .how { max-width: 680px; }
-.how h1 { font-size: clamp(1.6rem, 5vw, 2.2rem); color: var(--lamp); margin-bottom: 0; }
+.how h1 { font-size: clamp(1.6rem, 5vw, 2.2rem); color: var(--ink); text-shadow: 0 3px 0 var(--peach); margin-bottom: 0; }
 .how-intro { color: var(--muted); margin-top: 0.25rem; }
 
 .steps { margin: 1.5rem 0 2rem; padding: 0; list-style: none; counter-reset: step; }
@@ -144,7 +146,7 @@ h1, h2 { font-family: var(--font-big); font-weight: 400; line-height: 1.35; }
   grid-template-columns: 2.5rem 1fr;
   gap: 1rem;
   padding: 1rem 0;
-  border-bottom: 2px dashed rgba(244, 228, 193, 0.2);
+  border-bottom: 2px dashed rgba(90, 58, 42, 0.2);
 }
 
 .steps li::before {
@@ -153,21 +155,21 @@ h1, h2 { font-family: var(--font-big); font-weight: 400; line-height: 1.35; }
   place-items: center;
   width: 2.5rem;
   height: 2.5rem;
-  background: var(--lamp);
+  background: var(--butter);
   color: var(--ink);
   font-family: var(--font-big);
   box-shadow: 0 0 0 var(--px) var(--ink);
 }
 
-.steps strong { display: block; font-family: var(--font-big); font-weight: 400; color: var(--paper); }
+.steps strong { display: block; font-family: var(--font-big); font-weight: 400; color: var(--ink); }
 .steps span { color: var(--muted); }
 
 .example { padding: 1.25rem 1.5rem; margin: 1rem 0 2rem; }
 .example p { margin: 0.2rem 0; }
 .example .who { display: inline-block; min-width: 3.5rem; color: var(--wood); }
 
-.faq h2 { font-size: 1.3rem; color: var(--lamp); margin-top: 2.5rem; }
-.faq details { padding: 0.8rem 0; border-bottom: 2px dashed rgba(244, 228, 193, 0.2); }
+.faq h2 { font-size: 1.3rem; margin-top: 2.5rem; }
+.faq details { padding: 0.8rem 0; border-bottom: 2px dashed rgba(90, 58, 42, 0.2); }
 .faq summary { cursor: pointer; }
 .faq details p { margin: 0.4rem 0 0; color: var(--muted); }
 
@@ -192,8 +194,8 @@ h1, h2 { font-family: var(--font-big); font-weight: 400; line-height: 1.35; }
 }
 
 .beads { display: flex; flex-wrap: wrap; gap: 3px; margin: 0; padding: 0; list-style: none; }
-.beads li { width: 8px; height: 8px; background: var(--lamp); }
-.beads li.used { background: rgba(244, 228, 193, 0.18); }
+.beads li { width: 8px; height: 8px; background: var(--peach); box-shadow: 0 0 0 1px var(--ink); }
+.beads li.used { background: transparent; box-shadow: 0 0 0 1px rgba(90, 58, 42, 0.3); }
 
 /* 대화창: RPG 스타일 */
 .dialog {
@@ -209,13 +211,13 @@ h1, h2 { font-family: var(--font-big); font-weight: 400; line-height: 1.35; }
   top: -0.9rem;
   left: 1rem;
   padding: 0 0.6rem;
-  background: var(--wood);
-  color: var(--paper);
+  background: var(--peach);
+  color: var(--ink);
   font-size: 0.85rem;
   box-shadow: 0 0 0 3px var(--ink);
 }
 
-.dialog.thinking .line { color: #8a6a4a; }
+.dialog.thinking .line { color: var(--muted); }
 
 .answers { display: flex; justify-content: center; flex-wrap: wrap; gap: 1.1rem; }
 .answers .btn { min-width: 7rem; }
@@ -235,20 +237,20 @@ h1, h2 { font-family: var(--font-big); font-weight: 400; line-height: 1.35; }
 .categories label {
   display: block;
   padding: 0.7rem 0.25rem;
-  background: var(--wood);
-  color: var(--paper);
+  background: var(--paper);
+  color: var(--ink);
   text-align: center;
   cursor: pointer;
   box-shadow: 0 0 0 3px var(--ink);
 }
 
-.categories input:checked + label { background: var(--lamp); color: var(--ink); }
-.categories input:focus-visible + label { outline: var(--px) solid var(--lamp); outline-offset: var(--px); }
+.categories input:checked + label { background: var(--butter); color: var(--ink); }
+.categories input:focus-visible + label { outline: var(--px) solid var(--peach); outline-offset: var(--px); }
 
 .center { text-align: center; }
 
-.message { min-height: 1.75em; margin: 1rem 0 0; color: var(--berry); text-align: center; }
-.message.slow { color: var(--lamp); }
+.message { min-height: 1.75em; margin: 1rem 0 0; color: var(--error); text-align: center; }
+.message.slow { color: var(--wait); }
 
 /* 주문서 */
 .order {
@@ -265,7 +267,7 @@ h1, h2 { font-family: var(--font-big); font-weight: 400; line-height: 1.35; }
   padding-bottom: 0.5rem;
 }
 
-.order .empty { color: #8a6a4a; font-size: 0.9rem; text-align: center; }
+.order .empty { color: var(--muted); font-size: 0.9rem; text-align: center; }
 
 .order ol { margin: 0; padding: 0; list-style: none; font-size: 0.9rem; }
 
@@ -274,12 +276,12 @@ h1, h2 { font-family: var(--font-big); font-weight: 400; line-height: 1.35; }
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.3rem 0;
-  border-bottom: 1px dotted rgba(58, 36, 22, 0.35);
+  border-bottom: 1px dotted rgba(90, 58, 42, 0.35);
 }
 
 .order li b { font-weight: 400; white-space: nowrap; color: var(--wood); }
 
-.result h2 { margin: 1.5rem 0 0.25rem; font-size: clamp(1.4rem, 5vw, 2rem); color: var(--lamp); text-align: center; }
+.result h2 { margin: 1.5rem 0 0.25rem; font-size: clamp(1.4rem, 5vw, 2rem); color: var(--ink); text-shadow: 0 3px 0 var(--peach); text-align: center; }
 .result p { color: var(--muted); text-align: center; }
 
 .reveal { display: flex; gap: 1rem; margin: 1.25rem 0; }

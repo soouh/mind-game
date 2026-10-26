@@ -7,21 +7,29 @@ const Workshop = (() => {
   const W = 96;
   const H = 64;
   const C = {
-    wall: "#3b2819", wallLine: "#2b1d14", shelf: "#6b4226",
-    wood: "#7a4a2a", woodTop: "#a0683c", woodDark: "#4e2f1a",
-    lamp: "#ffcf6b", lampDark: "#c98f2e",
-    metal: "#8d99a6", metalDark: "#4a5560", metalLight: "#c5ced6",
-    skin: "#f1c27d", band: "#c8553d", shirt: "#4f6d7a", apron: "#e9d8a6",
-    ink: "#2a1a10", spark: "#fff3b0", jar1: "#7fb3a8", jar2: "#d98c5f", jar3: "#b9a0d6",
+    // 따뜻한 원목 공방
+    wall: "#e8b98a", wallLine: "#d9a676", wainscot: "#c98f5e", wainLine: "#b67d4f",
+    line: "#6b4430",                     // 부드러운 갈색 테두리 (검정 대신)
+    wood: "#b9784a", woodTop: "#d99a63", woodDark: "#93593a",
+    sky1: "#ffd6a5", sky2: "#ffb4a2", cloud: "#fff4e6", curtain: "#9cc59b", curtainDark: "#7aa679",
+    pot: "#e07a5f", leaf: "#7fb069", leafDark: "#5e8f4e",
+    jar1: "#a8dadc", jar2: "#f4a988", jar3: "#cdb4db", lid: "#8a5a3b", yarn: "#f28482", yarnLine: "#d96b6b",
+    bulb: ["#ffd166", "#f4a988", "#a8dadc", "#cdb4db"],
+    clock: "#fff4e6",
+    // 장인
+    skin: "#ffd9b8", cheek: "#f7a1a1", hat: "#f08a5d", hatLight: "#f7b27a", hair: "#8b5a3c",
+    eye: "#3b2a22", shine: "#ffffff", mouth: "#c0605a", shirt: "#9cc59b", apron: "#fff3df", pocket: "#f2c9a0",
+    // 작업 도구
+    mallet: "#c98f5e", malletTop: "#e2b07e", handle: "#8a5a3b", block: "#a86b42", blockTop: "#c98f5e", ring: "#d9a676",
+    star: "#ffd166", heart: "#f28482", white: "#fffaf2",
   };
 
   let ctx = null;
   let state = "idle";
   let frame = 0;
-  let item = null;          // 완성품 도트 그림 (작은 캔버스)
-  let timer = null;
+  let item = null;
+  let puffs = [];      // 망치질할 때 튀는 별·하트
 
-  // 한 칸 칠하기
   function px(x, y, w, h, color) {
     ctx.fillStyle = color;
     ctx.fillRect(x, y, w, h);
@@ -39,114 +47,170 @@ const Workshop = (() => {
   // ---------- 배경 ----------
   function drawRoom() {
     px(0, 0, W, H, C.wall);
-    for (let x = 7; x < W; x += 12) px(x, 0, 1, 46, C.wallLine);   // 벽 판자 줄
+    for (let x = 5; x < W; x += 10) px(x, 0, 1, 36, C.wallLine);
+    px(0, 36, W, 10, C.wainscot);                      // 아래쪽 벽 판넬
+    for (let x = 0; x < W; x += 12) px(x, 37, 1, 9, C.wainLine);
+    px(0, 36, W, 1, C.wainLine);
 
-    // 오른쪽 선반과 병들
-    px(66, 18, 26, 2, C.shelf);
-    px(68, 11, 4, 7, C.jar1); px(68, 10, 4, 1, C.ink);
-    px(75, 13, 5, 5, C.jar2); px(76, 12, 3, 1, C.ink);
-    px(83, 10, 4, 8, C.jar3); px(83, 9, 4, 1, C.ink);
+    // 창문 (노을 하늘 + 구름 + 커튼)
+    px(6, 7, 22, 18, C.line);
+    px(7, 8, 20, 8, C.sky1);
+    px(7, 16, 20, 8, C.sky2);
+    const cx = 8 + (Math.floor(frame / 12) % 18);
+    px(cx, 11, 5, 2, C.cloud); px(cx + 1, 10, 3, 1, C.cloud);
+    px(16, 8, 1, 16, C.line); px(7, 15, 20, 1, C.line);
+    px(5, 6, 5, 21, C.curtain); px(6, 7, 1, 19, C.curtainDark);
+    px(24, 6, 5, 21, C.curtain); px(27, 7, 1, 19, C.curtainDark);
+    px(4, 5, 26, 2, C.handle);                         // 커튼봉
+    // 창틀 화분
+    px(6, 25, 22, 2, C.woodTop);
+    px(10, 21, 5, 4, C.pot); px(10, 21, 5, 1, "#c4634a");
+    px(11, 17, 1, 4, C.leaf); px(13, 16, 1, 5, C.leafDark); px(9, 18, 2, 2, C.leaf); px(14, 17, 2, 2, C.leaf);
 
-    // 걸어둔 도구들 (왼쪽 벽)
-    px(26, 8, 1, 10, C.woodTop); px(24, 6, 5, 3, C.metal);       // 망치
-    px(31, 8, 1, 9, C.woodTop); px(30, 16, 3, 3, C.metalDark);   // 드라이버
+    // 꼬마전구 줄 (번갈아 반짝)
+    for (let x = 2; x < W; x += 2) {
+      const y = 2 + Math.round(Math.sin(x / 7) * 1);
+      px(x, y, 1, 1, C.line);
+    }
+    for (let i = 0, x = 4; x < W; x += 9, i++) {
+      const y = 3 + Math.round(Math.sin(x / 7) * 1);
+      const on = (i + Math.floor(frame / 4)) % 3 !== 0;
+      px(x, y, 2, 2, on ? C.bulb[i % 4] : "#c7a184");
+    }
 
-    // 천장 램프 (불빛이 살짝 깜빡여요)
-    px(47, 0, 1, 5, C.ink);
-    px(44, 5, 7, 3, C.lampDark);
-    const glow = frame % 20 < 18 ? "rgba(255, 207, 107, 0.10)" : "rgba(255, 207, 107, 0.06)";
-    px(38, 8, 19, 4, glow); px(34, 12, 27, 6, glow); px(30, 18, 35, 10, glow);
-    px(46, 8, 3, 1, C.lamp);
+    // 벽시계 (바늘이 째깍째깍)
+    px(41, 9, 9, 9, C.line); px(42, 10, 7, 7, C.clock);
+    px(45, 11, 1, 3, C.line);
+    const t = Math.floor(frame / 5) % 4;
+    const hand = [[1, 0], [1, 1], [0, 1], [-1, 1]][t];
+    px(45 + hand[0], 13 + hand[1], 1, 1, C.hat);
+    px(45 + hand[0] * 2, 13 + hand[1] * 2, 1, 1, C.hat);
+
+    // 선반: 병, 털실, 화분
+    px(62, 22, 30, 2, C.woodDark); px(62, 21, 30, 1, C.woodTop);
+    px(64, 14, 5, 7, C.jar1); px(64, 13, 5, 1, C.lid); px(65, 16, 1, 3, C.white);
+    px(71, 16, 5, 5, C.jar2); px(71, 15, 5, 1, C.lid); px(72, 17, 1, 2, C.white);
+    px(78, 16, 5, 5, C.yarn); px(79, 15, 3, 1, C.yarn); px(78, 18, 5, 1, C.yarnLine); px(80, 16, 1, 5, C.yarnLine);
+    px(85, 17, 5, 4, C.pot); px(86, 13, 1, 4, C.leaf); px(88, 12, 1, 5, C.leafDark); px(84, 14, 2, 2, C.leaf); px(89, 14, 2, 2, C.leaf);
+    // 위 선반
+    px(66, 10, 22, 1, C.woodDark);
+    px(68, 6, 4, 4, C.jar3); px(68, 5, 4, 1, C.lid);
+    px(75, 7, 6, 3, C.heart); px(76, 6, 4, 1, C.heart);  // 천 뭉치
+    px(83, 6, 3, 4, C.jar1); px(83, 5, 3, 1, C.lid);
   }
 
-  // 돌아가는 톱니바퀴
-  function drawGear(cx, cy, step) {
-    px(cx - 4, cy - 4, 9, 9, C.metalDark);
-    px(cx - 3, cy - 3, 7, 7, C.metal);
-    px(cx - 1, cy - 1, 3, 3, C.wall);
-    const teeth = step % 2 === 0
-      ? [[0, -6], [0, 5], [-6, 0], [5, 0]]
-      : [[-5, -5], [4, -5], [-5, 4], [4, 4]];
-    teeth.forEach(([dx, dy]) => px(cx + dx, cy + dy, 2, 2, C.metalDark));
-  }
-
-  // ---------- 장인 ----------
+  // ---------- 장인 (동글동글 귀여운 얼굴) ----------
   const CRAFTER = [
-    "...hhhhhh...",
-    "..hhhhhhhh..",
-    "..kssssssk..",
-    "..sskssks...",
-    "..ssssssss..",
-    "...ssmmss...",
-    "...kssssk...",
-    "..bbbbbbbb..",
-    ".bbaaaaaabb.",
-    ".bbaaaaaabb.",
-    ".bbaaaaaabb.",
-    ".sbaaaaaabs.",
+    ".....oooooo.....",
+    "....ohhHHhho....",
+    "...ohhhhhhhho...",
+    "..ohhhhhhhhhho..",
+    "..orrrrrrrrrro..",
+    ".orssssssssssro.",
+    ".osssssssssssso.",
+    ".osswesssswesso.",
+    ".osseesssseesso.",
+    ".occsssmmssscco.",
+    "..osssssssssso..",
+    "...oossssssoo...",
+    ".otaaaaaaaaaato.",
+    ".otaaaappaaaato.",
+    ".osaaaappaaaaso.",
+    ".otaaaaaaaaaato.",
+    ".otaaaaaaaaaato.",
   ];
 
-  function drawCrafter(x, y, blink) {
+  function drawCrafter(x, y, blink, happy) {
     sprite(CRAFTER, x, y, {
-      h: C.band, k: C.ink, s: C.skin, m: "#a0522d", b: C.shirt, a: C.apron,
+      o: C.line, h: C.hat, H: C.hatLight, r: C.hair, s: C.skin, c: C.cheek,
+      e: C.eye, w: C.shine, m: C.mouth, t: C.shirt, a: C.apron, p: C.pocket,
     });
-    px(x + 3, y + 3, 1, 1, blink ? C.skin : C.ink);  // 눈 깜빡
-    px(x + 4, y + 3, 1, 1, C.skin);
-    px(x + 6, y + 3, 1, 1, blink ? C.skin : C.ink);
-  }
-
-  // 망치: 들었을 때 / 내리쳤을 때
-  function drawHammer(up) {
-    if (up) {
-      px(54, 30, 1, 9, C.woodTop);      // 손잡이
-      px(52, 27, 5, 3, C.metal);        // 망치 머리
-      px(52, 27, 5, 1, C.metalLight);
-    } else {
-      px(51, 39, 6, 1, C.woodTop);
-      px(47, 37, 4, 4, C.metal);
-      px(47, 37, 4, 1, C.metalLight);
+    if (blink || happy) {
+      // 눈 감기(깜빡) 또는 웃는 눈 ^^
+      [[4, 7], [5, 7], [4, 8], [5, 8], [10, 7], [11, 7], [10, 8], [11, 8]].forEach(([dx, dy]) => px(x + dx, y + dy, 1, 1, C.skin));
+      if (happy) {
+        px(x + 4, y + 8, 1, 1, C.eye); px(x + 5, y + 7, 1, 1, C.eye); px(x + 6, y + 8, 1, 1, C.eye);
+        px(x + 9, y + 8, 1, 1, C.eye); px(x + 10, y + 7, 1, 1, C.eye); px(x + 11, y + 8, 1, 1, C.eye);
+      } else {
+        px(x + 4, y + 8, 2, 1, C.eye); px(x + 10, y + 8, 2, 1, C.eye);
+      }
     }
   }
 
-  // ---------- 작업대와 모루 ----------
+  // 나무 망치: 들었을 때 / 내리쳤을 때
+  function drawMallet(up, x0) {
+    if (up) {
+      px(x0, 31, 1, 8, C.handle);
+      px(x0 - 2, 28, 5, 4, C.mallet); px(x0 - 2, 28, 5, 1, C.malletTop);
+      px(x0 - 3, 28, 1, 4, C.line); px(x0 + 3, 28, 1, 4, C.line);
+    } else {
+      px(x0 - 6, 41, 7, 1, C.handle);
+      px(x0 - 10, 38, 4, 5, C.mallet); px(x0 - 10, 38, 4, 1, C.malletTop);
+    }
+  }
+
+  // ---------- 작업대 ----------
   function drawBench() {
     px(0, 46, W, 2, C.woodTop);
     px(0, 48, W, 16, C.wood);
-    for (let x = 0; x < W; x += 16) px(x, 48, 1, 16, C.woodDark);
     px(0, 48, W, 1, C.woodDark);
+    for (let x = 0; x < W; x += 16) px(x, 48, 1, 16, C.woodDark);
+    // 작업대 위 소품: 실패, 가위
+    px(6, 42, 6, 4, C.jar2); px(6, 43, 6, 1, "#e08e6d"); px(7, 41, 4, 1, C.handle); px(7, 46, 4, 0, C.handle);
+    px(16, 44, 4, 2, C.line); px(18, 42, 1, 2, "#9aa5b1"); px(20, 41, 1, 3, "#9aa5b1");
   }
 
-  function drawAnvil() {
-    px(36, 40, 16, 2, C.metalLight);
-    px(36, 42, 16, 1, C.metal);
-    px(40, 43, 8, 2, C.metalDark);
-    px(38, 45, 12, 1, C.metalDark);
-    px(32, 40, 4, 1, C.metal);          // 모루 뿔
+  // 그루터기 작업 받침
+  function drawBlock() {
+    px(32, 40, 18, 6, C.block);
+    px(32, 39, 18, 2, C.blockTop);
+    px(36, 39, 10, 1, C.ring); px(39, 40, 4, 1, C.ring);
+    px(31, 39, 1, 7, C.line); px(50, 39, 1, 7, C.line);
   }
 
-  function drawSparks() {
-    for (let i = 0; i < 6; i++) {
-      const x = 40 + Math.floor(Math.random() * 14);
-      const y = 32 + Math.floor(Math.random() * 8);
-      px(x, y, 1, 1, Math.random() > 0.5 ? C.spark : C.lamp);
-    }
+  // 작은 하트
+  function heart(x, y, color) {
+    px(x, y, 1, 1, color); px(x + 2, y, 1, 1, color);
+    px(x, y + 1, 3, 1, color); px(x + 1, y + 2, 1, 1, color);
   }
 
   // 반짝이 별
   function star(x, y, size) {
-    px(x, y - size, 1, size * 2 + 1, C.spark);
-    px(x - size, y, size * 2 + 1, 1, C.spark);
+    px(x, y - size, 1, size * 2 + 1, C.star);
+    px(x - size, y, size * 2 + 1, 1, C.star);
+  }
+
+  function updatePuffs(spawn) {
+    if (spawn) {
+      for (let i = 0; i < 2; i++) {
+        puffs.push({ x: 34 + Math.random() * 14, y: 37, life: 6, kind: Math.random() > 0.5 ? "heart" : "star" });
+      }
+    }
+    puffs.forEach((p) => {
+      p.y -= 1.5;
+      p.life--;
+      if (p.kind === "heart") heart(Math.round(p.x), Math.round(p.y), C.heart);
+      else star(Math.round(p.x), Math.round(p.y), 1);
+    });
+    puffs = puffs.filter((p) => p.life > 0);
+  }
+
+  // "뚝딱" 말풍선 (도트 글자 대신 작은 느낌표 말풍선)
+  function bubble(x, y) {
+    px(x, y, 9, 6, C.white); px(x - 1, y + 1, 1, 4, C.white); px(x + 9, y + 1, 1, 4, C.white);
+    px(x + 2, y + 6, 2, 1, C.white); px(x + 2, y + 7, 1, 1, C.white);
+    px(x + 2, y + 2, 1, 1, C.line); px(x + 4, y + 2, 1, 1, C.line); px(x + 6, y + 2, 1, 1, C.line); // ...
   }
 
   // ---------- 완성품 ----------
   function drawItem() {
     if (!item) return;
-    const bob = frame % 8 < 4 ? 0 : 1;            // 살짝 둥실둥실
-    px(31, 39, 26, 1, "rgba(0, 0, 0, 0.3)");       // 그림자
-    ctx.drawImage(item, 32, 13 + bob);
+    const bob = frame % 8 < 4 ? 0 : 1;
+    px(31, 38, 20, 1, "rgba(107, 68, 48, 0.25)");
+    ctx.drawImage(item, 29, 13 + bob);
     const s = frame % 6;
-    if (s < 3) { star(28, 16, 2); star(62, 28, 1); }
-    else { star(62, 14, 2); star(27, 32, 1); }
+    if (s < 3) { star(27, 16, 2); heart(52, 26, C.heart); }
+    else { star(54, 14, 2); heart(25, 30, C.heart); }
   }
 
   // 이모지를 작은 도트 그림으로 바꾸기
@@ -161,17 +225,13 @@ const Workshop = (() => {
     g.font = `${size - 3}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
     g.fillText(emoji, size / 2, size / 2 + 1);
 
-    // 반투명한 가장자리를 없애서 또렷한 도트로 만들기 + 테두리 추가
+    // 반투명한 가장자리를 없애서 또렷한 도트로 + 부드러운 갈색 테두리
     const img = g.getImageData(0, 0, size, size);
     const d = img.data;
     const solid = new Uint8Array(size * size);
     for (let i = 0; i < size * size; i++) {
-      if (d[i * 4 + 3] > 110) {
-        d[i * 4 + 3] = 255;
-        solid[i] = 1;
-      } else {
-        d[i * 4 + 3] = 0;
-      }
+      if (d[i * 4 + 3] > 110) { d[i * 4 + 3] = 255; solid[i] = 1; }
+      else d[i * 4 + 3] = 0;
     }
     for (let y = 0; y < size; y++) {
       for (let x = 0; x < size; x++) {
@@ -181,7 +241,7 @@ const Workshop = (() => {
           const nx = x + dx, ny = y + dy;
           return nx >= 0 && ny >= 0 && nx < size && ny < size && solid[ny * size + nx];
         });
-        if (near) { d[i * 4] = 42; d[i * 4 + 1] = 26; d[i * 4 + 2] = 16; d[i * 4 + 3] = 255; }
+        if (near) { d[i * 4] = 107; d[i * 4 + 1] = 68; d[i * 4 + 2] = 48; d[i * 4 + 3] = 255; }
       }
     }
     g.putImageData(img, 0, 0);
@@ -192,20 +252,22 @@ const Workshop = (() => {
   function draw() {
     frame++;
     drawRoom();
-    drawGear(14, 14, state === "working" ? frame : Math.floor(frame / 6));
-    drawCrafter(56, 34, frame % 30 === 0);
+    const bounce = state === "working" && frame % 4 < 2 ? 1 : 0;   // 일할 때 들썩들썩
+    drawCrafter(58, 27 + bounce, frame % 28 === 0, state === "reveal");
     drawBench();
-    drawAnvil();
+    drawBlock();
 
     if (state === "working") {
       const up = frame % 4 < 2;
-      drawHammer(up);
-      if (!up) drawSparks();
+      drawMallet(up, 56);
+      updatePuffs(!up);
+      if (Math.floor(frame / 6) % 2 === 0) bubble(74, 20);
     } else if (state === "reveal") {
-      drawHammer(true);
+      drawMallet(true, 56);
       drawItem();
     } else {
-      drawHammer(true);
+      puffs = [];
+      drawMallet(true, 56);
     }
   }
 
@@ -217,22 +279,12 @@ const Workshop = (() => {
       ctx.imageSmoothingEnabled = false;
       draw();
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!reduce) timer = setInterval(draw, 140);
+      if (!reduce) setInterval(draw, 140);
     },
     setState(next, emoji) {
       state = next;
       item = next === "reveal" ? makePixelItem(emoji || "🎁") : null;
       if (ctx) draw();
-    },
-    // 결과 화면에서 완성품만 크게 보여줄 때 사용
-    renderItemTo(canvas, emoji) {
-      const pic = makePixelItem(emoji || "🎁");
-      canvas.width = 32;
-      canvas.height = 32;
-      const g = canvas.getContext("2d");
-      g.imageSmoothingEnabled = false;
-      g.clearRect(0, 0, 32, 32);
-      g.drawImage(pic, 4, 4);
     },
   };
 })();

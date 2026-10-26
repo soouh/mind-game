@@ -15,7 +15,7 @@
 ## 기술 스택
 - 프론트엔드: HTML, CSS, JavaScript (프레임워크 없음), Canvas 도트 애니메이션, Galmuri 도트 폰트
 - 백엔드: Vercel Serverless Functions (Python)
-- AI: Groq API (무료 등급, Llama 3.3 70B 모델)
+- AI: Groq API (무료 등급, openai/gpt-oss-120b 모델)
 - 배포: GitHub + Vercel
 
 ## 폴더 구조
@@ -43,7 +43,7 @@ API 키는 코드에 절대 넣지 않고 Vercel 환경 변수로 관리합니�
 | 이름 | 값 |
 |---|---|
 | `GROQ_API_KEY` | Groq Console에서 발급받은 API 키 (필수) |
-| `GROQ_MODEL` | 사용할 모델 이름 (선택, 기본값 `llama-3.3-70b-versatile`) |
+| `GROQ_MODEL` | 사용할 모델 이름 (선택, 기본값 `openai/gpt-oss-120b`) |
 
 설정 방법: Vercel 프로젝트 → Settings → Environment Variables → 위 이름과 값을 추가 → 재배포(Redeploy)
 
@@ -52,6 +52,7 @@ API 키는 코드에 절대 넣지 않고 Vercel 환경 변수로 관리합니�
 ## 개발 과정에서 해결한 문제
 - 처음에는 Google Gemini API를 사용했으나, 사용하려던 모델이 서비스 종료되어 404 오류 → 최신 모델로 변경
 - 이후 응답 지연(504)과 서버 혼잡(503)이 반복되어, 응답 속도가 빠른 Groq API로 교체
+- Groq의 Llama 3.3 모델도 2026년 8월에 서비스 종료되어 502 오류 → Groq 공식 지원 종료 목록을 확인하고 권장 대체 모델(gpt-oss-120b)로 변경
 
 키가 노출된 것 같으면 Groq Console에서 즉시 폐기하고 새로 발급한 뒤, Vercel 환경 변수를 새 키로 바꿔주세요.
 

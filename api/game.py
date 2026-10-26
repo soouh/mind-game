@@ -13,7 +13,7 @@ import time
 import requests
 
 # 사용할 모델. Vercel 환경 변수 GROQ_MODEL 로 바꿀 수 있어요. (없으면 기본값 사용)
-MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 MAX_QUESTIONS = 20
 CATEGORIES = {"동물", "음식", "물건", "아무거나"}
@@ -141,12 +141,18 @@ class handler(BaseHTTPRequestHandler):
                 {"role": "user", "content": build_prompt(category, history)},
             ],
             "temperature": 0.7,
-            "max_tokens": 200,
+            # 이 모델은 답하기 전에 속으로 생각하는데, 그 분량까지 포함한 최대 길이예요.
+            "max_completion_tokens": 1000,
+            "reasoning_effort": "low",  # 생각은 짧게 → 빠른 응답
             "response_format": {"type": "json_object"},  # JSON으로만 답하게 하기
         }
         started = time.time()
         try:
             res = call_ai(api_key, payload)
+            # 다른 모델로 바꿨는데 "생각 짧게" 설정을 지원하지 않으면(400), 그 설정을 빼고 다시 시도
+            if res.status_code == 400 and "reasoning" in res.text.lower():
+                payload.pop("reasoning_effort")
+                res = call_ai(api_key, payload)
         except requests.Timeout:
             print(f"AI timeout after {time.time() - started:.1f}s (model={MODEL})")
             return self._send(504, {"error": "AI 응답이 너무 늦어요. 다시 시도해 주세요."})
