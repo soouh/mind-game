@@ -50,13 +50,13 @@ const Workshop = (() => {
   raccoon.onload = () => { parts = buildRaccoonParts(raccoon); if (ctx) draw(); };
   raccoon.src = "images/raccoon.png";
 
-  // 상황별 너구리 그림 (캔버스 2배 격자 기준 위치)
-  //  work: 망치질하는 모습 / happy: 성공했을 때 / sad: 실패했을 때
+  // 상황별 너구리 그림. 이미지 크기가 달라도 몸통 중심과 발바닥 기준선을 동일하게 맞춰요.
+  // work/hit: 108x52, happy/sad: 66x50. 공통 중심 X=138, 바닥 Y=92.
   const POSES = {
-    work:  { src: "images/raccoon-work.png",  x: 84,  y: 40 },     // 망치 든 모습
-    hit:   { src: "images/raccoon-hit.png",   x: 84,  y: 40 },     // 탕! 내리친 순간 (불꽃)
-    happy: { src: "images/raccoon-happy.png", x: 105, y: 42 },
-    sad:   { src: "images/raccoon-sad.png",   x: 105, y: 42 },
+    work:  { src: "images/raccoon-work.png",  w: 108, h: 52 },
+    hit:   { src: "images/raccoon-hit.png",   w: 108, h: 52 },
+    happy: { src: "images/raccoon-happy.png", w: 66,  h: 50 },
+    sad:   { src: "images/raccoon-sad.png",   w: 66,  h: 50 },
   };
   Object.values(POSES).forEach((pose) => {
     pose.img = new Image();
@@ -69,7 +69,9 @@ const Workshop = (() => {
     if (!pose.ready) return false;
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.drawImage(pose.img, pose.x + dx, pose.y + dy);
+    const anchorX = 138; // 모든 상태에서 몸통 중심 고정
+    const anchorY = 92;  // 모든 상태에서 발바닥 기준선 고정
+    ctx.drawImage(pose.img, anchorX - pose.w / 2 + dx, anchorY - pose.h + dy, pose.w, pose.h);
     ctx.restore();
     return true;
   }
@@ -336,12 +338,12 @@ const Workshop = (() => {
   }
 
   // ---------- 완성품 ----------
-  // 18 x 18 칸 그림을 2배로 키워서 작업대 위에 띄워요.
+  // 완성품은 기존 표시 크기의 절반(18 x 18)으로 작업대 위에 띄워요.
   function drawItem() {
     if (!item) return;
     const bob = frame % 8 < 4 ? 0 : 1;
-    px(28, 38, 26, 1, "rgba(107, 68, 48, 0.25)");
-    ctx.drawImage(item, 23, 2 + bob, 36, 36);
+    px(31, 38, 20, 1, "rgba(107, 68, 48, 0.25)");
+    ctx.drawImage(item, 32, 20 + bob, 18, 18);
     const s = frame % 6;
     if (s < 3) { star(21, 10, 2); heart(57, 22, C.heart); }
     else { star(58, 6, 2); heart(19, 26, C.heart); }
