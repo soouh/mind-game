@@ -18,7 +18,7 @@ const Workshop = (() => {
     bulb: ["#ffd166", "#f4a988", "#a8dadc", "#cdb4db"],
     clock: "#fff4e6",
     // 너구리 장인
-    fur: "#b39f8c", furLight: "#f3e8da", mask: "#7d695c", earIn: "#f2a7a0", cheek: "#f7a1a1",
+    fur: "#b08b6e", furLight: "#f6ecdf", mask: "#6e5546", earIn: "#f2a7a0", cheek: "#f7a1a1",
     eye: "#2a1e18", shine: "#ffffff", nose: "#3b2a22", scarf: "#f08a5d", apron: "#fff3df", pocket: "#f2c9a0",
     hat: "#f08a5d",
     // 작업 도구
@@ -103,22 +103,22 @@ const Workshop = (() => {
 
   // ---------- 너구리 장인 ----------
   const CRAFTER = [
-    "..oo........oo..",
-    ".ofpo......opfo.",
-    ".ofpfoooooofpfo.",
+    "...oo......oo...",
+    "..ofpo....opfo..",
+    "..ofpfooooofpfo.",
     ".offffffffffffo.",
     "offffffffffffffo",
-    "ofmmmmffffmmmmfo",
-    "ofmwemFFFFmwemfo",
-    "ofmeemFFFFmeemfo",
-    "ofFmmFFnnFFmmFfo",
-    "ofcFFFmFFmFFFcfo",
-    ".offFFFmmFFFffo.",
+    "offmmffffffmmffo",
+    "ofmmwemFFmwemmfo",
+    "ofmmeemFFmeemmfo",
+    "offmmFFnnFFmmffo",
+    "ofcFFFFooFFFFcfo",
+    ".ofFFFFFFFFFFfo.",
     "..ooffffffffoo..",
     "..ohhhhhhhhhho..",
     ".ofaaaaaaaaaafo.",
-    ".ofaaaappaaaafo.",
-    "ofFaaaappaaaaFfo",
+    ".ofaaaakkaaaafo.",
+    "ofFaaaakkaaaaFfo",
     ".ofaaaaaaaaaafo.",
   ];
 
@@ -137,18 +137,17 @@ const Workshop = (() => {
     drawTail(x + 14, y + 14, frame % 10 < 5);
     sprite(CRAFTER, x, y, {
       o: C.line, f: C.fur, F: C.furLight, m: C.mask, p: C.earIn, c: C.cheek,
-      e: C.eye, w: C.shine, n: C.nose, h: C.scarf, a: C.apron,
+      e: C.eye, w: C.shine, n: C.nose, h: C.scarf, a: C.apron, k: C.pocket,
     });
-    // 앞치마 주머니
-    px(x + 7, y + 14, 2, 2, C.pocket);
     if (blink || happy) {
-      [[3, 6], [4, 6], [3, 7], [4, 7], [11, 6], [12, 6], [11, 7], [12, 7]].forEach(([dx, dy]) => px(x + dx, y + dy, 1, 1, C.mask));
+      // 눈 지우기
+      [[4, 6], [5, 6], [4, 7], [5, 7], [10, 6], [11, 6], [10, 7], [11, 7]].forEach(([dx, dy]) => px(x + dx, y + dy, 1, 1, C.mask));
       if (happy) {
         // 웃는 눈 ^^
-        px(x + 2, y + 7, 1, 1, C.eye); px(x + 3, y + 6, 2, 1, C.eye); px(x + 5, y + 7, 1, 1, C.eye);
-        px(x + 10, y + 7, 1, 1, C.eye); px(x + 11, y + 6, 2, 1, C.eye); px(x + 13, y + 7, 1, 1, C.eye);
+        px(x + 3, y + 7, 1, 1, C.eye); px(x + 4, y + 6, 2, 1, C.eye); px(x + 6, y + 7, 1, 1, C.eye);
+        px(x + 9, y + 7, 1, 1, C.eye); px(x + 10, y + 6, 2, 1, C.eye); px(x + 12, y + 7, 1, 1, C.eye);
       } else {
-        px(x + 3, y + 7, 2, 1, C.eye); px(x + 11, y + 7, 2, 1, C.eye);
+        px(x + 4, y + 7, 2, 1, C.eye); px(x + 10, y + 7, 2, 1, C.eye);
       }
     }
   }
