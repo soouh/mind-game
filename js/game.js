@@ -1,5 +1,5 @@
 // =========================================
-// 내 마음이 들리니 - 마음 공방 게임 진행 코드
+// 내 마음이 들리니 - 밤티 공방 게임 진행 코드
 // 흐름: 버튼 클릭 → fetch('/api/game') 로 AI 장인에게 요청 → 받은 질문/완성품을 화면에 표시
 // =========================================
 
@@ -12,6 +12,10 @@ let category = "";
 let history = [];             // [{ q: "동물이야?", a: "응" }, ...]
 let current = null;           // 지금 장인이 한 말 { type, text, item, emoji }
 let busy = false;
+
+// 만드는 중 대사 (차례대로 번갈아 나와요)
+const WORKING_LINES = ["뚝딱뚝딱... 잠깐만!", "으쌰으쌰, 열심히 생각 중!", "어... 이 연장이 맞나? 잠깐만!"];
+let workingLine = 0;
 
 // ---------- 화면 요소 ----------
 const $ = (id) => document.getElementById(id);
@@ -101,7 +105,7 @@ async function askAI() {
   showMessage("");
   Workshop.setState("working");
   $("dialog").classList.add("thinking");
-  say("뚝딱뚝딱... 잠깐만!");
+  say(WORKING_LINES[workingLine++ % WORKING_LINES.length]);   // 만드는 중 대사를 번갈아
 
   // 실패 처리 3: 응답이 늦을 때 안내, 너무 늦으면 요청 중단
   const controller = new AbortController();

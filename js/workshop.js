@@ -1,5 +1,5 @@
 // =========================================
-// 마음 공방 그림 그리기 (도트 애니메이션)
+// 밤티 공방 그림 그리기 (도트 애니메이션)
 // 96 x 64 칸짜리 작은 그림을 그린 뒤, CSS로 크게 늘려서 도트처럼 보이게 해요.
 // 상태: "idle"(쉬는 중) / "working"(뚝딱뚝딱) / "reveal"(완성품 짠!)
 // 완성품 그림은 AI가 직접 그린 16 x 16 도트 그림을 쓰고, 그림이 없거나 망가졌으면 이모지로 대신해요.
@@ -50,13 +50,40 @@ const Workshop = (() => {
   raccoon.onload = () => { parts = buildRaccoonParts(raccoon); if (ctx) draw(); };
   raccoon.src = "images/raccoon.png";
 
-  // 상황별 너구리 그림. 이미지 크기가 달라도 몸통 중심과 발바닥 기준선을 동일하게 맞춰요.
-  // work/hit: 108x52, happy/sad: 66x50. 공통 중심 X=138, 바닥 Y=92.
+  // 공방 배경 그림 (192 x 128 칸 = 캔버스 크기 그대로)
+  // 기본은 게임 화면 배경이고, 캔버스에 data-bg가 있으면 그 그림을 써요. (시작 화면은 따로 받은 배경)
+  // 못 불러오면 예전처럼 코드로 그린 공방을 보여줘요.
+  const background = new Image();
+  let backgroundReady = false;
+  background.onload = () => { backgroundReady = true; if (ctx) draw(); };
+
+  function drawBackground() {
+    if (!backgroundReady) {
+      drawRoom();
+      return false;
+    }
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(background, 0, 0);
+    ctx.restore();
+    return true;
+  }
+
+  // 배경 그림을 쓸 땐 작업대가 그림에 들어 있어서 따로 안 그려요.
+  function drawBenchIfNeeded() {
+    if (backgroundReady) return;
+    drawBench();
+    drawBlock();
+  }
+
+  // 상황별 너구리 그림 (캔버스 2배 격자 기준 위치)
+  //  work: 망치질하는 모습 / happy: 성공했을 때 / sad: 실패했을 때
   const POSES = {
-    work:  { src: "images/raccoon-work.png",  w: 108, h: 52 },
-    hit:   { src: "images/raccoon-hit.png",   w: 108, h: 52 },
-    happy: { src: "images/raccoon-happy.png", w: 66,  h: 50 },
-    sad:   { src: "images/raccoon-sad.png",   w: 66,  h: 50 },
+    // 모든 그림의 얼굴(주둥이) 위치를 기본 너구리와 똑같이 맞춘 좌표예요.
+    work:  { src: "images/raccoon-work.png",  x: 84,  y: 42 },     // 망치 든 모습
+    hit:   { src: "images/raccoon-hit.png",   x: 84,  y: 42 },     // 탕! 내리친 순간 (불꽃)
+    happy: { src: "images/raccoon-happy.png", x: 101, y: 43 },
+    sad:   { src: "images/raccoon-sad.png",   x: 101, y: 43 },
   };
   Object.values(POSES).forEach((pose) => {
     pose.img = new Image();
@@ -69,9 +96,7 @@ const Workshop = (() => {
     if (!pose.ready) return false;
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    const anchorX = 138; // 모든 상태에서 몸통 중심 고정
-    const anchorY = 92;  // 모든 상태에서 발바닥 기준선 고정
-    ctx.drawImage(pose.img, anchorX - pose.w / 2 + dx, anchorY - pose.h + dy, pose.w, pose.h);
+    ctx.drawImage(pose.img, pose.x + dx, pose.y + dy);
     ctx.restore();
     return true;
   }
@@ -338,15 +363,19 @@ const Workshop = (() => {
   }
 
   // ---------- 완성품 ----------
-  // 완성품은 기존 표시 크기의 절반(18 x 18)으로 작업대 위에 띄워요.
+  // 완성품: 18 x 18 칸 그림을 2배로 (처음 크기의 절반) 작업대 위에 띄워요.
   function drawItem() {
     if (!item) return;
     const bob = frame % 8 < 4 ? 0 : 1;
-    px(31, 38, 20, 1, "rgba(107, 68, 48, 0.25)");
-    ctx.drawImage(item, 32, 20 + bob, 18, 18);
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "rgba(90, 50, 30, 0.25)";
+    ctx.fillRect(68, 89, 32, 2);                       // 작업대 위 그림자
+    ctx.drawImage(item, 66, 52 + bob * 2, 36, 36);     // 18칸 그림을 2배로 (처음 크기의 절반)
+    ctx.restore();
     const s = frame % 6;
-    if (s < 3) { star(21, 10, 2); heart(57, 22, C.heart); }
-    else { star(58, 6, 2); heart(19, 26, C.heart); }
+    if (s < 3) { star(30, 26, 2); heart(53, 30, C.heart); }
+    else { star(52, 22, 2); heart(29, 36, C.heart); }
   }
 
   // AI가 그린 16 x 16 도트 그림을 캔버스로 바꾸기
@@ -454,6 +483,7 @@ const Workshop = (() => {
   function fxWork(impact) {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.beginPath(); ctx.rect(0, 0, 192, 92); ctx.clip();   // 효과는 작업대 위쪽에만
     glow("255, 232, 170", impact ? 0.55 : 0.35, 46, 40);
     const n = 22;
     for (let i = 0; i < n; i++) {
@@ -467,7 +497,12 @@ const Workshop = (() => {
       }
     }
     if (impact) {   // 내리칠 때 작업대 위 번쩍 + "탕탕!"
-      dpx(70, 70, 26, 14, "rgba(255, 240, 180, 0.55)");
+      // 망치가 닿는 곳이 번쩍
+      const g = ctx.createRadialGradient(104, 86, 0, 104, 86, 16);
+      g.addColorStop(0, "rgba(255, 240, 180, 0.8)");
+      g.addColorStop(1, "rgba(255, 240, 180, 0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(88, 70, 32, 22);
       ctx.font = "11px Galmuri11, monospace";
       ctx.textBaseline = "top";
       ctx.fillStyle = "#fffaf2";
@@ -482,6 +517,7 @@ const Workshop = (() => {
   function fxHappy() {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.beginPath(); ctx.rect(0, 0, 192, 92); ctx.clip();   // 효과는 작업대 위쪽에만
     const n = 12, spin = frame * 0.06;
     for (let i = 0; i < n; i++) {
       const a0 = (i / n) * Math.PI * 2 + spin, a1 = a0 + Math.PI / n;
@@ -508,6 +544,7 @@ const Workshop = (() => {
   function fxSad() {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.beginPath(); ctx.rect(0, 0, 192, 92); ctx.clip();   // 효과는 작업대 위쪽에만
     glow("110, 130, 165", 0.35, 48, 42);
     const cx = 130 + (frame % 8 < 4 ? 0 : 1), cy = 26;
     // 구름
@@ -529,46 +566,42 @@ const Workshop = (() => {
   function draw() {
     frame++;
     ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
-    drawRoom();
+    drawBackground();
 
     if (state === "working") {
       // 뚝딱뚝딱: 4장면 중 마지막이 "쾅" 내리치는 순간
       const step = frame % 4;
       const impact = step === 3;
       fxWork(impact);
-      const drawn = impact ? drawPose("hit", 0, 0) : drawPose("work", 0, 0);
+      const drawn = impact ? drawPose("hit", 0, 0) : drawPose("work", 0, 0);   // 위치는 그대로, 그림만 바뀌어요
       if (!drawn) drawRaccoon(impact ? 0 : 2, impact ? -0.55 : 0, "normal");
-      drawBench();
-      drawBlock();
+      drawBenchIfNeeded();
       updatePuffs(impact);
       if (Math.floor(frame / 6) % 2 === 0) bubble(83, 13);
     } else if (state === "happy") {
       fxHappy();
-      if (!drawPose("happy", 0, 0)) drawRaccoon(0, 0, "happy");
-      drawBench();
-      drawBlock();
+      if (!drawPose("happy", 0, 0)) drawRaccoon(0, 0.2, "happy");
+      drawBenchIfNeeded();
       drawItem();
     } else if (state === "sad") {
       fxSad();
       if (!drawPose("sad", 0, 0)) drawRaccoon(0, 0, "blink");
-      drawBench();
-      drawBlock();
+      drawBenchIfNeeded();
       puffs = [];
     } else if (state === "reveal") {
-      drawRaccoon(0, 0, "normal");      // 위치 고정
-      drawBench();
-      drawBlock();
+      drawRaccoon(0, 0, "normal");
+      drawBenchIfNeeded();
       drawItem();
     } else {
-      drawRaccoon(0, 0, frame % 28 === 0 ? "blink" : "normal");   // 위치 고정
-      drawBench();
-      drawBlock();
+      drawRaccoon(0, 0, frame % 28 === 0 ? "blink" : "normal");   // 가끔 눈 깜빡
+      drawBenchIfNeeded();
       puffs = [];
     }
   }
 
   return {
     init(canvas) {
+      background.src = canvas.dataset.bg || "images/workshop-bg.png";
       canvas.width = W * SCALE;
       canvas.height = H * SCALE;
       ctx = canvas.getContext("2d");
