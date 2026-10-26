@@ -1,1 +1,66 @@
-requests>=2.31.0
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css">
+  <link rel="stylesheet" href="css/style.css">
+  <title>이용 방법 - 마음 공방</title>
+</head>
+<body>
+  <header class="site-header">
+    <a class="logo" href="index.html">내 마음이 들리니</a>
+    <nav aria-label="메뉴">
+      <ul class="nav">
+        <li><a href="index.html">공방 입구</a></li>
+        <li><a href="how.html" aria-current="page">이용 방법</a></li>
+        <li><a href="play.html">주문하기</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="how">
+    <h1>이용 방법</h1>
+    <p class="how-intro">말은 주문이지만, 사실은 장인이 네 마음을 맞히는 스무고개야.</p>
+
+    <ol class="steps">
+      <li><div><strong>떠올리기</strong><span>동물, 음식, 물건 중에 하나를 마음속으로 정해. 아무한테도 말하지 마!</span></div></li>
+      <li><div><strong>종류 고르기</strong><span>떠올린 게 어느 쪽인지만 알려줘. 잘 모르겠으면 "아무거나".</span></div></li>
+      <li><div><strong>주문 질문에 답하기</strong><span>장인이 묻는 말에 응, 아니, 모르겠어 중 하나를 눌러. 그동안 공방이 뚝딱뚝딱 돌아가.</span></div></li>
+      <li><div><strong>완성품 확인</strong><span>"따란!" 하고 완성품이 나오면 마음에 드는지 알려줘. 20번 안에 못 만들면 장인의 패배야.</span></div></li>
+    </ol>
+
+    <h2 style="font-size:1.3rem;color:var(--ink);margin-bottom:0">주문 예시</h2>
+    <div class="example pixel-box">
+      <p><span class="who">장인</span> 동물이야?</p>
+      <p><span class="who">손님</span> 응</p>
+      <p><span class="who">장인</span> 집에서 같이 살고 싶어?</p>
+      <p><span class="who">손님</span> 응</p>
+      <p><span class="who">장인</span> 어항이 필요해?</p>
+      <p><span class="who">손님</span> 아니</p>
+      <p><span class="who">장인</span> 따란! 고양이 완성! 어때, 마음에 들어?</p>
+    </div>
+
+    <section class="faq">
+      <h2>자주 묻는 질문</h2>
+      <details>
+        <summary>내 답을 저장해?</summary>
+        <p>아니. 주문 기록은 지금 열어둔 화면에만 있고, 새로고침하면 사라져.</p>
+      </details>
+      <details>
+        <summary>장인이 같은 질문을 또 해.</summary>
+        <p>장인도 가끔 깜빡해. 같은 질문이면 처음이랑 같은 답을 눌러 줘.</p>
+      </details>
+      <details>
+        <summary>"연결이 끊겼어" 문구가 떠.</summary>
+        <p>잠깐 연결이 불안정했을 수 있어. 다시 시도 버튼을 누르면 하던 주문부터 이어져.</p>
+      </details>
+    </section>
+
+    <p class="center"><a class="btn" href="play.html">주문하러 가기</a></p>
+  </main>
+
+  <footer class="site-footer">마음 공방의 장인은 AI예요. 가끔 엉뚱한 걸 만들어도 너그럽게 봐주세요.</footer>
+</body>
+</html>

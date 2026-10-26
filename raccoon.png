@@ -1,0 +1,323 @@
+/* =========================================
+   내 마음이 들리니 - 마음 공방 (도트 테마)
+   색상은 여기 :root 에서 한 번에 바꿀 수 있어요.
+   ========================================= */
+:root {
+  --cream: #fbf1e3;      /* 배경: 따뜻한 크림색 */
+  --cream-dot: #f3e1c9;  /* 배경 점무늬 */
+  --paper: #fffaf2;      /* 종이/대화창 */
+  --ink: #5a3a2a;        /* 글자·테두리: 부드러운 갈색 */
+  --muted: #9a7660;      /* 흐린 글자 */
+  --wood: #b9784a;       /* 원목 */
+  --peach: #f4a988;      /* 강조 1: 복숭아 */
+  --butter: #ffd98a;     /* 강조 2: 버터 */
+  --sage: #9cc59b;       /* 응 버튼 */
+  --rose: #f28482;       /* 아니 버튼 */
+  --error: #c9503c;      /* 오류 글자 */
+  --wait: #b5761c;       /* 기다림 안내 글자 */
+
+  --px: 4px;             /* 도트 한 칸 크기 */
+  --font: "Galmuri11", "Apple SD Gothic Neo", "Malgun Gothic", monospace;
+  --font-big: "Galmuri14", "Galmuri11", monospace;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html, body { margin: 0; }
+
+body {
+  min-height: 100vh;
+  background-color: var(--cream);
+  background-image: radial-gradient(var(--cream-dot) 2px, transparent 2px);
+  background-size: 20px 20px;
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 1rem;
+  line-height: 1.75;
+  -webkit-font-smoothing: none;
+  word-break: keep-all;
+}
+
+a { color: var(--wood); }
+
+:focus-visible { outline: var(--px) solid var(--peach); outline-offset: var(--px); }
+
+/* 도트 느낌 테두리: 모서리가 깎인 픽셀 박스 */
+.pixel-box {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--ink),
+    0 var(--px) 0 0 var(--ink),
+    calc(var(--px) * -1) 0 0 0 var(--ink),
+    var(--px) 0 0 0 var(--ink),
+    0 calc(var(--px) * 2) 0 0 rgba(90, 58, 42, 0.18);
+}
+
+/* ---------- 상단 메뉴 ---------- */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem;
+}
+
+.logo {
+  font-family: var(--font-big);
+  font-size: 1.25rem;
+  color: var(--ink);
+  text-decoration: none;
+  text-shadow: 0 3px 0 var(--peach);
+}
+
+.nav { display: flex; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+
+.nav a {
+  display: block;
+  padding: 0.25rem 0.7rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.nav a:hover { color: var(--ink); }
+.nav a[aria-current="page"] { background: var(--butter); color: var(--ink); box-shadow: 0 0 0 3px var(--ink); }
+
+main { max-width: 1000px; margin: 0 auto; padding: 0.5rem 1.25rem 3rem; }
+
+h1, h2 { font-family: var(--font-big); font-weight: 400; line-height: 1.35; }
+
+/* ---------- 버튼 ---------- */
+.btn {
+  display: inline-block;
+  border: 0;
+  padding: 0.65rem 1.4rem;
+  background: var(--butter);
+  color: var(--ink);
+  font-family: var(--font-big);
+  font-size: 1.05rem;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--ink),
+    0 var(--px) 0 0 var(--ink),
+    calc(var(--px) * -1) 0 0 0 var(--ink),
+    var(--px) 0 0 0 var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 rgba(90, 58, 42, 0.18);
+}
+
+.btn:active { transform: translateY(2px); box-shadow: 0 0 0 var(--px) var(--ink); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-yes { background: var(--sage); }
+.btn-no { background: var(--rose); }
+.btn-plain { background: var(--paper); }
+
+/* ---------- 공방 그림(캔버스) ---------- */
+.workshop {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  margin: 0 auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  box-shadow: 0 0 0 var(--px) var(--ink), 0 0 0 calc(var(--px) * 2) var(--peach), 0 0 0 calc(var(--px) * 3) var(--ink);
+}
+
+/* ---------- 메인 페이지 ---------- */
+.hero { text-align: center; padding: 1.5rem 0 1rem; }
+.hero h1 { margin: 1.75rem 0 0.25rem; font-size: clamp(1.8rem, 6vw, 2.8rem); color: var(--ink); text-shadow: 0 4px 0 var(--peach); }
+.hero p { max-width: 36ch; margin: 0.5rem auto 1.75rem; color: var(--muted); }
+.hero-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 1.25rem; }
+
+/* ---------- 게임 방법 페이지 ---------- */
+.how { max-width: 680px; }
+.how h1 { font-size: clamp(1.6rem, 5vw, 2.2rem); color: var(--ink); text-shadow: 0 3px 0 var(--peach); margin-bottom: 0; }
+.how-intro { color: var(--muted); margin-top: 0.25rem; }
+
+.steps { margin: 1.5rem 0 2rem; padding: 0; list-style: none; counter-reset: step; }
+
+.steps li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 2px dashed rgba(90, 58, 42, 0.2);
+}
+
+.steps li::before {
+  content: counter(step);
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: var(--butter);
+  color: var(--ink);
+  font-family: var(--font-big);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+}
+
+.steps strong { display: block; font-family: var(--font-big); font-weight: 400; color: var(--ink); }
+.steps span { color: var(--muted); }
+
+.example { padding: 1.25rem 1.5rem; margin: 1rem 0 2rem; }
+.example p { margin: 0.2rem 0; }
+.example .who { display: inline-block; min-width: 3.5rem; color: var(--wood); }
+
+.faq h2 { font-size: 1.3rem; margin-top: 2.5rem; }
+.faq details { padding: 0.8rem 0; border-bottom: 2px dashed rgba(90, 58, 42, 0.2); }
+.faq summary { cursor: pointer; }
+.faq details p { margin: 0.4rem 0 0; color: var(--muted); }
+
+/* ---------- 게임하기 페이지 ---------- */
+.game {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 2rem;
+  align-items: start;
+}
+
+.stage { min-width: 0; }
+
+.counter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 1.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.beads { display: flex; flex-wrap: wrap; gap: 3px; margin: 0; padding: 0; list-style: none; }
+.beads li { width: 8px; height: 8px; background: var(--peach); box-shadow: 0 0 0 1px var(--ink); }
+.beads li.used { background: transparent; box-shadow: 0 0 0 1px rgba(90, 58, 42, 0.3); }
+
+/* 대화창: RPG 스타일 */
+.dialog {
+  position: relative;
+  min-height: 6.5rem;
+  margin: 1.75rem 0 1.5rem;
+  padding: 1.4rem 1.25rem 1rem;
+  font-size: 1.15rem;
+}
+
+.dialog .name {
+  position: absolute;
+  top: -0.9rem;
+  left: 1rem;
+  padding: 0 0.6rem;
+  background: var(--peach);
+  color: var(--ink);
+  font-size: 0.85rem;
+  box-shadow: 0 0 0 3px var(--ink);
+}
+
+.dialog.thinking .line { color: var(--muted); }
+
+.answers { display: flex; justify-content: center; flex-wrap: wrap; gap: 1.1rem; }
+.answers .btn { min-width: 7rem; }
+
+.categories {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  border: 0;
+}
+
+.categories legend { grid-column: 1 / -1; margin-bottom: 0.75rem; color: var(--muted); }
+.categories input { position: absolute; opacity: 0; }
+
+.categories label {
+  display: block;
+  padding: 0.7rem 0.25rem;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 0 0 3px var(--ink);
+}
+
+.categories input:checked + label { background: var(--butter); color: var(--ink); }
+.categories input:focus-visible + label { outline: var(--px) solid var(--peach); outline-offset: var(--px); }
+
+.center { text-align: center; }
+
+.message { min-height: 1.75em; margin: 1rem 0 0; color: var(--error); text-align: center; }
+.message.slow { color: var(--wait); }
+
+/* 주문서 */
+.order {
+  padding: 1.25rem 1.25rem 1rem;
+  transform: rotate(1deg);
+  margin-top: 1.25rem;
+}
+
+.order h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  text-align: center;
+  border-bottom: 2px dashed var(--ink);
+  padding-bottom: 0.5rem;
+}
+
+.order .empty { color: var(--muted); font-size: 0.9rem; text-align: center; }
+
+.order ol { margin: 0; padding: 0; list-style: none; font-size: 0.9rem; }
+
+.order li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px dotted rgba(90, 58, 42, 0.35);
+}
+
+.order li b { font-weight: 400; white-space: nowrap; color: var(--wood); }
+
+.result h2 { margin: 1.5rem 0 0.25rem; font-size: clamp(1.4rem, 5vw, 2rem); color: var(--ink); text-shadow: 0 3px 0 var(--peach); text-align: center; }
+.result p { color: var(--muted); text-align: center; }
+
+.reveal { display: flex; gap: 1rem; margin: 1.25rem 0; }
+
+.reveal input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.8rem;
+  border: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  box-shadow: 0 0 0 var(--px) var(--ink);
+}
+
+/* ---------- 바닥글 ---------- */
+.site-footer { padding: 2rem 1.25rem; text-align: center; color: var(--muted); font-size: 0.8rem; }
+
+/* ---------- 태블릿 이하 (화면 폭 820px 이하): 주문서를 아래로 ---------- */
+@media (max-width: 820px) {
+  .game { grid-template-columns: 1fr; gap: 1rem; }
+  .order { transform: none; }
+}
+
+/* ---------- 모바일 (화면 폭 560px 이하) ---------- */
+@media (max-width: 560px) {
+  :root { --px: 3px; }
+  .site-header { flex-direction: column; gap: 0.4rem; padding: 0.8rem; }
+  main { padding: 0.5rem 0.9rem 2.5rem; }
+  .categories { grid-template-columns: repeat(2, 1fr); }
+  .dialog { font-size: 1.05rem; }
+  .answers { gap: 0.9rem; }
+  .answers .btn { flex: 1; min-width: 0; padding: 0.65rem 0.4rem; }
+  .reveal { flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
