@@ -4,83 +4,87 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css">
   <link rel="stylesheet" href="css/style.css">
-  <title>게임하기 · 내 마음이 들리니</title>
+  <title>주문하기 - 마음 공방</title>
 </head>
 <body>
   <header class="site-header">
     <a class="logo" href="index.html">내 마음이 들리니</a>
     <nav aria-label="메뉴">
       <ul class="nav">
-        <li><a href="index.html">홈</a></li>
-        <li><a href="how.html">게임 방법</a></li>
-        <li><a href="play.html" aria-current="page">게임하기</a></li>
+        <li><a href="index.html">공방 입구</a></li>
+        <li><a href="how.html">이용 방법</a></li>
+        <li><a href="play.html" aria-current="page">주문하기</a></li>
       </ul>
     </nav>
   </header>
 
   <main class="game">
+    <div class="stage">
+      <canvas id="workshop" class="workshop" role="img" aria-label="도트 공방 그림"></canvas>
 
-    <!-- 1단계: 카테고리 고르기 -->
-    <section id="panel-start" class="panel active">
-      <h1>단어를 떠올렸나요?</h1>
-      <p class="game-sub">떠올린 단어의 카테고리를 고르고 시작하세요.</p>
-      <fieldset class="categories">
-        <legend>카테고리</legend>
-        <input type="radio" name="category" id="cat-animal" value="동물"><label for="cat-animal">동물</label>
-        <input type="radio" name="category" id="cat-food" value="음식"><label for="cat-food">음식</label>
-        <input type="radio" name="category" id="cat-thing" value="물건"><label for="cat-thing">물건</label>
-        <input type="radio" name="category" id="cat-any" value="아무거나"><label for="cat-any">아무거나</label>
-      </fieldset>
-      <button id="start-btn" class="btn btn-main" type="button">게임 시작하기</button>
-      <p id="start-message" class="message" role="alert"></p>
-    </section>
+      <div id="counter" class="counter" hidden>
+        <span id="counter-label">남은 질문 20번</span>
+        <ul id="beads" class="beads" aria-hidden="true"></ul>
+      </div>
 
-    <!-- 2단계: 질문 주고받기 -->
-    <section id="panel-play" class="panel">
-      <p id="counter-label" class="counter-label">남은 질문 20번</p>
-      <ul id="beads" class="beads" aria-hidden="true"></ul>
+      <div id="dialog" class="dialog pixel-box">
+        <span class="name">장인</span>
+        <p id="line" class="line" aria-live="polite" style="margin:0">어서 와! 오늘은 뭐가 필요해? 마음속으로 떠올렸으면 종류를 골라 줘.</p>
+      </div>
 
-      <div id="question" class="question-bubble" aria-live="polite">...</div>
+      <!-- 1단계: 종류 고르기 -->
+      <section id="panel-start">
+        <fieldset class="categories">
+          <legend>떠올린 것의 종류</legend>
+          <input type="radio" name="category" id="cat-animal" value="동물"><label for="cat-animal">동물</label>
+          <input type="radio" name="category" id="cat-food" value="음식"><label for="cat-food">음식</label>
+          <input type="radio" name="category" id="cat-thing" value="물건"><label for="cat-thing">물건</label>
+          <input type="radio" name="category" id="cat-any" value="아무거나"><label for="cat-any">아무거나</label>
+        </fieldset>
+        <p class="center"><button id="start-btn" class="btn" type="button">주문 시작</button></p>
+      </section>
 
-      <div id="answers-question" class="answers">
-        <button class="btn btn-main" type="button" data-answer="예">예</button>
-        <button class="btn btn-main" type="button" data-answer="아니요">아니요</button>
-        <button class="btn btn-ghost" type="button" data-answer="모르겠어요">모르겠어요</button>
+      <!-- 2단계: 주문 질문 -->
+      <div id="answers-question" class="answers" hidden>
+        <button class="btn btn-yes" type="button" data-answer="응">응</button>
+        <button class="btn btn-no" type="button" data-answer="아니">아니</button>
+        <button class="btn btn-plain" type="button" data-answer="모르겠어">모르겠어</button>
       </div>
 
       <div id="answers-guess" class="answers" hidden>
-        <button id="guess-yes" class="btn btn-main" type="button">맞아요</button>
-        <button id="guess-no" class="btn btn-ghost" type="button">아니에요</button>
+        <button id="guess-yes" class="btn btn-yes" type="button">응, 마음에 들어!</button>
+        <button id="guess-no" class="btn btn-no" type="button">아니, 이게 아니야</button>
       </div>
 
-      <div id="retry-box" hidden>
-        <button id="retry-btn" class="btn btn-main" type="button">다시 시도하기</button>
-      </div>
+      <p id="retry-box" class="center" hidden>
+        <button id="retry-btn" class="btn" type="button">다시 시도하기</button>
+      </p>
 
-      <p id="play-message" class="message" role="alert"></p>
-    </section>
+      <!-- 3단계: 결과 -->
+      <section id="panel-result" class="result" hidden>
+        <h2 id="result-title"></h2>
+        <p id="result-text"></p>
+        <form id="reveal-form" class="reveal" hidden>
+          <input id="reveal-input" type="text" maxlength="20" placeholder="원래 주문하려던 것" aria-label="원래 주문하려던 것">
+          <button class="btn" type="submit">알려주기</button>
+        </form>
+        <p class="center"><button id="again-btn" class="btn" type="button">새 주문 하기</button></p>
+      </section>
 
-    <!-- 3단계: 결과 -->
-    <section id="panel-result" class="panel result">
-      <h2 id="result-title"></h2>
-      <p id="result-text"></p>
+      <p id="message" class="message" role="alert"></p>
+    </div>
 
-      <form id="reveal-form" class="reveal" hidden>
-        <input id="reveal-input" type="text" maxlength="30" placeholder="정답을 알려주세요" aria-label="정답">
-        <button class="btn btn-main" type="submit">알려주기</button>
-      </form>
-
-      <button id="again-btn" class="btn btn-main" type="button">한 판 더 하기</button>
-      <ul id="history" class="history"></ul>
-    </section>
-
+    <aside class="order pixel-box" aria-label="주문서">
+      <h2>주문서</h2>
+      <p id="order-empty" class="empty">아직 주문 내용이 없어요</p>
+      <ol id="order-list"></ol>
+    </aside>
   </main>
 
-  <footer class="site-footer">AI가 질문을 만들어요. 가끔 엉뚱한 질문을 해도 너그럽게 봐주세요.</footer>
+  <footer class="site-footer">마음 공방의 장인은 AI예요. 가끔 엉뚱한 걸 만들어도 너그럽게 봐주세요.</footer>
+  <script src="js/workshop.js"></script>
   <script src="js/game.js"></script>
 </body>
 </html>

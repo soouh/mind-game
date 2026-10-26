@@ -4,58 +4,36 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css">
   <link rel="stylesheet" href="css/style.css">
-  <title>내 마음이 들리니 · AI 스무고개</title>
+  <title>내 마음이 들리니 - 마음 공방</title>
 </head>
 <body>
   <header class="site-header">
     <a class="logo" href="index.html">내 마음이 들리니</a>
     <nav aria-label="메뉴">
       <ul class="nav">
-        <li><a href="index.html" aria-current="page">홈</a></li>
-        <li><a href="how.html">게임 방법</a></li>
-        <li><a href="play.html">게임하기</a></li>
+        <li><a href="index.html" aria-current="page">공방 입구</a></li>
+        <li><a href="how.html">이용 방법</a></li>
+        <li><a href="play.html">주문하기</a></li>
       </ul>
     </nav>
   </header>
 
   <main>
     <section class="hero">
-      <div class="hero-bubble">지금 뭐 생각하고 있어요?<br>제가 맞혀볼게요.</div>
-      <h1>내 마음이 들리니</h1>
-      <p>단어 하나를 마음속에 정하세요. AI가 예, 아니요로 답할 수 있는 질문을 던지면서 20번 안에 맞혀요.</p>
+      <canvas id="workshop" class="workshop" role="img" aria-label="장인이 작업대 앞에 서 있는 도트 공방 그림"></canvas>
+      <h1>어서 와, 마음 공방이야!</h1>
+      <p>필요한 걸 마음속으로만 떠올려 줘. 몇 가지 주문 질문에 답하면, 20번 안에 딱 그걸 만들어 줄게.</p>
       <div class="hero-actions">
-        <a class="btn btn-main" href="play.html">게임 시작하기</a>
-        <a class="btn btn-ghost" href="how.html">게임 방법 보기</a>
+        <a class="btn" href="play.html">주문하러 가기</a>
+        <a class="btn btn-plain" href="how.html">이용 방법</a>
       </div>
-      <ul class="beads" aria-label="AI에게 주어진 질문 기회 20번">
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-      </ul>
     </section>
   </main>
 
-  <footer class="site-footer">AI가 질문을 만들어요. 가끔 엉뚱한 질문을 해도 너그럽게 봐주세요.</footer>
+  <footer class="site-footer">마음 공방의 장인은 AI예요. 가끔 엉뚱한 걸 만들어도 너그럽게 봐주세요.</footer>
+  <script src="js/workshop.js"></script>
+  <script>Workshop.init(document.getElementById("workshop"));</script>
 </body>
 </html>
