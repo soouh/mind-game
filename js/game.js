@@ -158,6 +158,7 @@ document.querySelectorAll("#answers-question button").forEach((btn) => {
 
 // 완성품이 마음에 들 때
 $("guess-yes").addEventListener("click", () => {
+  Workshop.setState("happy");   // 너구리 눈웃음 ^^
   history.push({ q: `완성품: ${current.item}`, a: "응" });
   updateCounter();
   renderOrder();

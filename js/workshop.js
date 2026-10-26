@@ -35,10 +35,96 @@ const Workshop = (() => {
   // 너구리 장인 그림 (images/raccoon.png, 62 x 43 칸)
   // 공방 그림보다 2배 촘촘한 도트라서, 캔버스를 2배 크기로 만들고 너구리만 원래 크기로 그려요.
   const SCALE = 2;
+  const RACCOON_X = 102;    // 캔버스(2배 크기) 안에서 너구리 위치
+  const RACCOON_Y = 49;
+  // 망치와 주먹: 그림에서 x 0~17, y 0~24 영역(귀 테두리 제외). 손목(15, 25)을 중심으로 휘둘러요.
+  const ARM = { pivotX: 15, pivotY: 25 };
+  const isArm = (x, y) => x <= 17 && y <= 24 && !(x >= 16 && y < 13);
+  // 눈 위치 (왼눈, 오른눈) - 눈웃음/깜빡임 표정에 사용
+  const EYES = [{ x: 22, y: 16 }, { x: 36, y: 16 }];   // 각각 5 x 5 칸
+  const EYE_FILL = "#9d6249";   // 눈 주변 마스크 색
+  const EYE_LINE = "#4a2a1e";   // 웃는 눈 선 색
+
   const raccoon = new Image();
-  let raccoonReady = false;
-  raccoon.onload = () => { raccoonReady = true; };
+  let parts = null;   // { body, bodyHappy, bodyBlink, arm }
+  raccoon.onload = () => { parts = buildRaccoonParts(raccoon); };
   raccoon.src = "images/raccoon.png";
+
+  // 너구리 그림을 "몸통"과 "망치 든 팔"로 나누고, 표정 바꾼 몸통도 미리 만들어 둬요.
+  function buildRaccoonParts(img) {
+    const w = img.width, h = img.height;
+    const make = () => {
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      const g = c.getContext("2d");
+      g.drawImage(img, 0, 0);
+      return { c, g };
+    };
+    // 한 칸씩 보면서 "망치와 주먹"은 arm에, 나머지는 body에 나눠 담기
+    const body = make();
+    const arm = make();
+    const bodyData = body.g.getImageData(0, 0, w, h);
+    const armData = arm.g.getImageData(0, 0, w, h);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4 + 3;      // 투명도 칸
+        if (isArm(x, y)) bodyData.data[i] = 0;
+        else armData.data[i] = 0;
+      }
+    }
+    body.g.putImageData(bodyData, 0, 0);
+    arm.g.putImageData(armData, 0, 0);
+
+    const face = (draw) => {
+      const v = document.createElement("canvas");
+      v.width = w; v.height = h;
+      const g = v.getContext("2d");
+      g.drawImage(body.c, 0, 0);
+      EYES.forEach((e) => {
+        g.fillStyle = EYE_FILL;
+        g.fillRect(e.x, e.y, 5, 5);
+        g.fillStyle = EYE_LINE;
+        draw(g, e.x, e.y);
+      });
+      return v;
+    };
+    // 눈웃음 ^^
+    const bodyHappy = face((g, x, y) => {
+      g.fillRect(x, y + 3, 1, 1); g.fillRect(x + 1, y + 2, 1, 1); g.fillRect(x + 2, y + 1, 1, 1);
+      g.fillRect(x + 3, y + 2, 1, 1); g.fillRect(x + 4, y + 3, 1, 1);
+      g.fillRect(x, y + 4, 1, 1); g.fillRect(x + 4, y + 4, 1, 1);
+    });
+    // 눈 깜빡 —
+    const bodyBlink = face((g, x, y) => { g.fillRect(x, y + 3, 5, 1); });
+
+    return { body: body.c, bodyHappy, bodyBlink, arm: arm.c, armData: arm.g.getImageData(0, 0, w, h), armFrames: {} };
+  }
+
+  // 팔을 돌린 그림을 미리 만들어 두기 (칸이 빠지지 않게 한 칸씩 계산해서 또렷하게)
+  const ARM_BOX = 72;   // 돌린 팔을 담을 정사각형 크기, 어깨는 가운데
+  function rotatedArm(angle) {
+    const key = angle.toFixed(2);
+    if (parts.armFrames[key]) return parts.armFrames[key];
+    const src = parts.armData;
+    const c = document.createElement("canvas");
+    c.width = ARM_BOX; c.height = ARM_BOX;
+    const g = c.getContext("2d");
+    const out = g.createImageData(ARM_BOX, ARM_BOX);
+    const cos = Math.cos(angle), sin = Math.sin(angle), half = ARM_BOX / 2;
+    for (let y = 0; y < ARM_BOX; y++) {
+      for (let x = 0; x < ARM_BOX; x++) {
+        const dx = x + 0.5 - half, dy = y + 0.5 - half;
+        const sx = Math.floor(cos * dx + sin * dy + ARM.pivotX);     // 거꾸로 돌려서 원래 칸 찾기
+        const sy = Math.floor(-sin * dx + cos * dy + ARM.pivotY);
+        if (sx < 0 || sy < 0 || sx >= src.width || sy >= src.height) continue;
+        const si = (sy * src.width + sx) * 4, di = (y * ARM_BOX + x) * 4;
+        for (let k = 0; k < 4; k++) out.data[di + k] = src.data[si + k];
+      }
+    }
+    g.putImageData(out, 0, 0);
+    parts.armFrames[key] = c;
+    return c;
+  }
 
   function px(x, y, w, h, color) {
     ctx.fillStyle = color;
@@ -294,16 +380,23 @@ const Workshop = (() => {
     return makeEmojiItem((data && data.emoji) || "🎁");
   }
 
-  // 너구리 그림 그리기 (그림 파일을 못 불러오면 기존 도트 너구리로 대신)
-  function drawRaccoon(lift, blink, happy) {
-    if (!raccoonReady) {
-      drawCrafter(58, 27 - lift, blink, happy);
-      drawMallet(true, 56);
+  // 너구리 그리기
+  // lift: 위로 들썩이는 칸 수 / swing: 망치 휘두른 각도(라디안) / face: "normal" | "happy" | "blink"
+  function drawRaccoon(lift, swing, face) {
+    if (!parts) {   // 그림 파일을 못 불러왔으면 기존 도트 너구리로 대신
+      drawCrafter(58, 27 - Math.round(lift / 2), face === "blink", face === "happy");
+      drawMallet(swing === 0, 56);
       return;
     }
+    const x = RACCOON_X, y = RACCOON_Y - lift;
+    const body = face === "happy" ? parts.bodyHappy : face === "blink" ? parts.bodyBlink : parts.body;
     ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);       // 너구리는 촘촘한 도트 그대로
-    ctx.drawImage(raccoon, 102, 49 - lift);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);     // 너구리는 촘촘한 도트 그대로
+    ctx.drawImage(body, x, y);
+    // 망치 든 팔: 어깨를 중심으로 돌린 그림
+    const arm = swing === 0 ? null : rotatedArm(swing);
+    if (arm) ctx.drawImage(arm, x + ARM.pivotX - ARM_BOX / 2, y + ARM.pivotY - ARM_BOX / 2);
+    else ctx.drawImage(parts.arm, x, y);
     ctx.restore();
   }
 
@@ -313,20 +406,37 @@ const Workshop = (() => {
     ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
     drawRoom();
 
-    let lift = 0;
-    if (state === "working") lift = frame % 4 < 2 ? 3 : 0;          // 뚝딱뚝딱 들썩들썩
-    else if (state === "reveal") lift = frame % 6 < 3 ? 2 : 0;      // 완성! 신나서 콩콩
-    else lift = frame % 16 < 8 ? 1 : 0;                              // 숨쉬듯 살짝
+    let lift = 0, swing = 0, face = frame % 28 === 0 ? "blink" : "normal";
+    if (state === "working") {
+      // 뚝딱뚝딱: 망치를 크게 내리치고(앞으로 기울임) 다시 들어올리기
+      const step = frame % 4;
+      swing = [0, -0.3, -0.55, -0.3][step];
+      lift = step === 2 ? 0 : 2;
+    } else if (state === "reveal") {
+      lift = frame % 8 < 4 ? 1 : 0;          // 완성품 보여주며 두근두근
+      swing = -0.2;
+    } else if (state === "happy") {
+      lift = frame % 4 < 2 ? 4 : 0;          // 마음에 든대! 신나서 콩콩
+      swing = frame % 4 < 2 ? 0.2 : -0.1;    // 망치 흔들흔들
+      face = "happy";
+    } else {
+      lift = frame % 16 < 8 ? 1 : 0;         // 숨쉬듯 살짝
+    }
 
-    drawRaccoon(lift, frame % 28 === 0, state === "reveal");
+    drawRaccoon(lift, swing, face);
     drawBench();
     drawBlock();
 
     if (state === "working") {
-      updatePuffs(frame % 4 >= 2);
+      updatePuffs(frame % 4 === 2);          // 내리칠 때 하트·별이 퐁
       if (Math.floor(frame / 6) % 2 === 0) bubble(83, 13);
-    } else if (state === "reveal") {
+    } else if (state === "reveal" || state === "happy") {
       drawItem();
+      if (state === "happy") {
+        updatePuffs(frame % 3 === 0);
+        if (frame % 6 < 3) { heart(80, 14, C.heart); heart(86, 20, C.heart); }
+        else { heart(84, 12, C.heart); star(90, 17, 1); }
+      }
     } else {
       puffs = [];
     }
@@ -343,9 +453,11 @@ const Workshop = (() => {
       if (!reduce) setInterval(draw, 140);
     },
     // data: AI가 보낸 완성품 정보 { pixels, palette, emoji }
+    // happy: 손님이 마음에 든다고 했을 때 (눈웃음 ^^)
     setState(next, data) {
       state = next;
-      item = next === "reveal" ? makeItem(data) : null;
+      if (next === "reveal") item = makeItem(data);
+      else if (next !== "happy") item = null;      // happy일 땐 완성품을 그대로 둬요
       if (ctx) draw();
     },
   };

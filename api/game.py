@@ -43,9 +43,11 @@ SYSTEM_PROMPT = """너는 "마음 공방"의 너구리 장인이야. 손님이 �
 
 출력 형식: 아래 둘 중 하나의 JSON만 출력해. 설명이나 마크다운은 절대 붙이지 마.
 질문할 때: {"type": "question", "text": "털이 있어?"}
-완성품을 내놓을 때: {"type": "guess", "item": "단호박 수프", "emoji": "🍲"}
+완성품을 내놓을 때: {"type": "guess", "item": "단호박 수프", "emoji": "🍲", "exact": false}
 - item은 최대한 구체적인 짧은 한국어 이름 (예: "수프"보다 "단호박 수프").
-- emoji는 그 물건과 가장 비슷한 이모지 1개."""
+- emoji는 그 물건과 가장 비슷한 이모지 1개.
+- exact는 그 이모지가 바로 그 물건 자체를 그린 이모지면 true, 비슷한 것일 뿐이면 false.
+  예: 감자튀김 🍟 true, 고양이 🐱 true, 단호박 수프 🍲 false, 붕어빵 🐟 false."""
 
 
 def build_prompt(category, history):
@@ -82,7 +84,8 @@ def parse_ai_reply(text):
         if not item:
             raise ValueError("완성품 이름이 비어 있음")
         emoji = str(data.get("emoji", "")).strip()[:8] or "🎁"
-        return {"type": "guess", "item": item[:20], "emoji": emoji}
+        exact = data.get("exact") is True
+        return {"type": "guess", "item": item[:20], "emoji": emoji, "exact": exact}
 
     raise ValueError("type 오류")
 
@@ -336,11 +339,16 @@ class handler(BaseHTTPRequestHandler):
             print("Unexpected reply:", res.text[:500])
             return self._send(502, {"error": "AI가 엉뚱한 대답을 했어요. 다시 시도해 주세요."})
 
-        # 4) 완성품이면 Gemini에게 도트 그림 부탁 (실패해도 게임은 계속돼요)
+        # 4) 완성품 그림
+        #    딱 맞는 이모지가 있으면(예: 감자튀김 🍟) 이모지를 도트로 바꿔 쓰는 게 더 예뻐서 그대로 쓰고,
+        #    딱 맞는 이모지가 없을 때만 Gemini에게 도트 그림을 부탁해요. (실패해도 게임은 계속돼요)
         if result["type"] == "guess":
-            art = draw_pixel_art(result["item"])
-            if art:
-                result.update(art)
+            if result.pop("exact"):
+                print(f"Art skipped: '{result['item']}'에 딱 맞는 이모지 {result['emoji']} 사용")
+            else:
+                art = draw_pixel_art(result["item"])
+                if art:
+                    result.update(art)
 
         return self._send(200, result)
 
