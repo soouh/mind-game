@@ -20,8 +20,10 @@ MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
 BACKUP_MODEL = os.environ.get("GROQ_BACKUP_MODEL", "openai/gpt-oss-20b")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-# 도트 그림을 그릴 Gemini 모델. Vercel 환경 변수 GEMINI_ART_MODEL 로 바꿀 수 있어요.
-ART_MODEL = os.environ.get("GEMINI_ART_MODEL", "gemini-3.1-flash-lite")
+# 도트 그림을 그릴 Gemini 모델. 그림 실력이 더 좋은 Flash를 먼저 쓰고,
+# 실패하면(사용량 초과 등) 가벼운 Flash-Lite로 한 번 더 시도해요.
+ART_MODEL = os.environ.get("GEMINI_ART_MODEL", "gemini-3.5-flash")
+ART_BACKUP_MODEL = os.environ.get("GEMINI_ART_BACKUP_MODEL", "gemini-3.1-flash-lite")
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 MAX_QUESTIONS = 20
 CATEGORIES = {"동물", "음식", "물건", "아무거나"}
@@ -112,6 +114,26 @@ def clean_pixel_art(palette, pixels):
     filled = sum(ch != "." for row in rows for ch in row)
     if filled < 30:   # 칠한 칸이 너무 적으면 그림이라고 보기 어려워요
         return None
+
+    # "네모 하나를 한 색으로 칠한 그림" 걸러내기:
+    # 칠한 모양이 거의 꽉 찬 직사각형이고(85% 이상), 테두리를 뺀 안쪽의 85% 이상이 한 색이면 거절
+    def brightness(hex_color):
+        r, g, b = (int(hex_color[i:i + 2], 16) for i in (1, 3, 5))
+        return 0.3 * r + 0.59 * g + 0.11 * b
+    cells = [(x, y) for y, row in enumerate(rows) for x, ch in enumerate(row) if ch != "."]
+    xs, ys = [c[0] for c in cells], [c[1] for c in cells]
+    box_area = (max(xs) - min(xs) + 1) * (max(ys) - min(ys) + 1)
+    outline = min(colors, key=lambda k: brightness(colors[k]))
+    counts = {}
+    for row in rows:
+        for ch in row:
+            if ch != "." and ch != outline:
+                counts[ch] = counts.get(ch, 0) + 1
+    inner = sum(counts.values())
+    if not inner:
+        return None
+    if filled / box_area > 0.85 and max(counts.values()) / inner > 0.85:
+        return None
     return {"palette": colors, "pixels": rows}
 
 
@@ -123,6 +145,9 @@ ART_PROMPT = """너는 귀여운 도트 그림을 그리는 화가야. 요청받
 - palette: 소문자 한 글자 → "#RRGGBB" 색. 3~8가지 색. 진한 갈색 테두리 색을 꼭 넣어.
 - 가운데에 꽉 차게 그리고, 테두리를 두르고 안은 색으로 채워.
 - 그것만의 특징(색, 모양, 내용물)이 한눈에 보이게. 예: 단호박 수프면 그릇 안에 주황색 수프가 보여야 해.
+- 네모 하나를 한 색으로 채우지 마. 실제 실루엣(윤곽 모양)으로 그려.
+  예: 감자튀김이면 빨간 종이 상자 위로 노란 막대 여러 개가 삐죽삐죽 솟아 있게.
+- 한 가지 색이 그림의 대부분을 차지하지 않게, 밝은 부분과 어두운 부분을 넣어 입체감을 줘.
 - 따뜻하고 귀여운 색감으로.
 
 JSON만 출력해. 설명이나 마크다운은 절대 붙이지 마.
@@ -147,44 +172,39 @@ JSON만 출력해. 설명이나 마크다운은 절대 붙이지 마.
  "................"]}"""
 
 
-def draw_pixel_art(item):
-    """Gemini에게 완성품 도트 그림을 부탁해요. 실패하면 None (화면에서 이모지로 대신)."""
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        print("Art skipped: GEMINI_API_KEY 없음")
-        return None
-
+def ask_gemini_art(api_key, model, item, thinking, timeout):
+    """Gemini 모델 하나에게 그림을 부탁해요. 성공하면 그림, 실패하면 None."""
     config = {
         "responseMimeType": "application/json",
-        "maxOutputTokens": 2048,
+        "maxOutputTokens": 4096,
         "temperature": 0.6,
-        "thinkingConfig": {"thinkingLevel": "minimal"},   # 오래 고민하지 말고 바로 그리기
+        "thinkingConfig": {"thinkingLevel": thinking},
     }
     payload = {
         "system_instruction": {"parts": [{"text": ART_PROMPT}]},
         "contents": [{"role": "user", "parts": [{"text": f"그릴 것: {item}"}]}],
         "generationConfig": config,
     }
-    url = GEMINI_URL.format(model=ART_MODEL)
+    url = GEMINI_URL.format(model=model)
     headers = {"x-goog-api-key": api_key, "Content-Type": "application/json"}
     started = time.time()
     try:
-        res = requests.post(url, headers=headers, json=payload, timeout=12)
-        # 모델이 "minimal" 설정을 지원하지 않으면(400) 그 설정을 빼고 한 번 더
+        res = requests.post(url, headers=headers, json=payload, timeout=timeout)
+        # 모델이 생각 단계 설정을 지원하지 않으면(400) 그 설정을 빼고 한 번 더
         if res.status_code == 400 and "thinking" in res.text.lower():
             config.pop("thinkingConfig")
-            res = requests.post(url, headers=headers, json=payload, timeout=12)
+            res = requests.post(url, headers=headers, json=payload, timeout=timeout)
     except requests.RequestException as e:
-        print(f"Art failed after {time.time() - started:.1f}s:", repr(e))
+        print(f"Art failed after {time.time() - started:.1f}s (model={model}):", repr(e))
         return None
 
-    print(f"Art responded {res.status_code} in {time.time() - started:.1f}s (model={ART_MODEL})")
+    print(f"Art responded {res.status_code} in {time.time() - started:.1f}s (model={model})")
     if res.status_code != 200:
         print("Art API error:", res.status_code, res.text[:300])
         return None
     try:
         parts = res.json()["candidates"][0]["content"]["parts"]
-        text = "".join(p.get("text", "") for p in parts)
+        text = "".join(p.get("text", "") for p in parts if not p.get("thought"))
         start, end = text.find("{"), text.rfind("}")
         data = json.loads(text[start:end + 1])
         art = clean_pixel_art(data.get("palette"), data.get("pixels"))
@@ -192,7 +212,19 @@ def draw_pixel_art(item):
         print("Art unexpected reply:", res.text[:300])
         return None
     if not art:
-        print("Art rejected: 그림 형식이 맞지 않음")
+        print(f"Art rejected (model={model}): 형식이 틀렸거나 한 가지 색으로만 칠한 그림")
+    return art
+
+
+def draw_pixel_art(item):
+    """완성품 도트 그림을 받아와요. 둘 다 실패하면 None (화면에서 이모지로 대신)."""
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        print("Art skipped: GEMINI_API_KEY 없음")
+        return None
+    art = ask_gemini_art(api_key, ART_MODEL, item, "low", 13)
+    if not art and ART_BACKUP_MODEL and ART_BACKUP_MODEL != ART_MODEL:
+        art = ask_gemini_art(api_key, ART_BACKUP_MODEL, item, "minimal", 9)
     return art
 
 

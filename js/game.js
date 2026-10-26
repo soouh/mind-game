@@ -5,7 +5,7 @@
 
 const MAX_QUESTIONS = 20;     // 장인에게 주는 질문 기회
 const SLOW_MS = 8000;         // 8초가 넘으면 "조금만 기다려" 안내
-const TIMEOUT_MS = 30000;     // 30초가 넘으면 요청을 포기하고 오류 안내
+const TIMEOUT_MS = 45000;     // 45초가 넘으면 요청을 포기하고 오류 안내
 
 // 게임 상태: AI는 앞의 대화를 기억하지 못하므로, 매번 이 기록을 통째로 보내요.
 let category = "";
@@ -138,7 +138,7 @@ async function askAI() {
     $("dialog").classList.remove("thinking");
     say("앗, 연장이 부러졌어...");
     showMessage(err.name === "AbortError"
-      ? "장인이 30초 동안 대답하지 않았어요. 다시 시도해 주세요."
+      ? "장인이 45초 동안 대답하지 않았어요. 다시 시도해 주세요."
       : err.message);
     setButtons("retry");
   } finally {
