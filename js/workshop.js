@@ -47,8 +47,31 @@ const Workshop = (() => {
 
   const raccoon = new Image();
   let parts = null;   // { body, bodyHappy, bodyBlink, arm }
-  raccoon.onload = () => { parts = buildRaccoonParts(raccoon); };
+  raccoon.onload = () => { parts = buildRaccoonParts(raccoon); if (ctx) draw(); };
   raccoon.src = "images/raccoon.png";
+
+  // 상황별 너구리 그림 (캔버스 2배 격자 기준 위치)
+  //  work: 망치질하는 모습 / happy: 성공했을 때 / sad: 실패했을 때
+  const POSES = {
+    work:  { src: "images/raccoon-work.png",  x: 84,  y: 33 },
+    happy: { src: "images/raccoon-happy.png", x: 100, y: 42 },
+    sad:   { src: "images/raccoon-sad.png",   x: 100, y: 42 },
+  };
+  Object.values(POSES).forEach((pose) => {
+    pose.img = new Image();
+    pose.img.onload = () => { pose.ready = true; if (ctx) draw(); };
+    pose.img.src = pose.src;
+  });
+
+  function drawPose(name, dx, dy) {
+    const pose = POSES[name];
+    if (!pose.ready) return false;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(pose.img, pose.x + dx, pose.y + dy);
+    ctx.restore();
+    return true;
+  }
 
   // 너구리 그림을 "몸통"과 "망치 든 팔"로 나누고, 표정 바꾼 몸통도 미리 만들어 둬요.
   function buildRaccoonParts(img) {
@@ -400,44 +423,144 @@ const Workshop = (() => {
     ctx.restore();
   }
 
+  // ---------- 캐릭터 뒤 배경 효과 ----------
+  const CENTER = { x: 134, y: 66 };   // 너구리 몸 가운데 (2배 격자)
+
+  function dpx(x, y, w, h, color) {   // 2배 격자에 칠하기
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, w, h);
+  }
+
+  // 둥글고 부드러운 빛(또는 그늘)
+  function glow(color, alpha, rx, ry) {
+    ctx.save();
+    ctx.translate(CENTER.x, CENTER.y);
+    ctx.scale(1, ry / rx);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+    g.addColorStop(0, `rgba(${color}, ${alpha})`);
+    g.addColorStop(0.6, `rgba(${color}, ${alpha * 0.6})`);
+    g.addColorStop(1, `rgba(${color}, 0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, rx, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // 뚝딱뚝딱: 집중선 + 따뜻한 빛
+  function fxWork(impact) {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    glow("255, 232, 170", impact ? 0.55 : 0.35, 46, 40);
+    const n = 22;
+    for (let i = 0; i < n; i++) {
+      if ((i + frame) % 3 === 0) continue;            // 선이 깜빡깜빡
+      const a = (i / n) * Math.PI * 2 + (frame % 2) * 0.07;
+      const r0 = 34 + ((i * 7) % 6), r1 = r0 + 14 + ((i * 5) % 10);
+      for (let r = r0; r < r1; r += 1) {
+        const x = Math.round(CENTER.x + Math.cos(a) * r * 1.25);
+        const y = Math.round(CENTER.y + Math.sin(a) * r);
+        dpx(x, y, 1, 1, "rgba(255, 250, 235, 0.75)");
+      }
+    }
+    if (impact) {   // 내리칠 때 작업대 위 번쩍 + "탕탕!"
+      dpx(70, 70, 26, 14, "rgba(255, 240, 180, 0.55)");
+      ctx.font = "11px Galmuri11, monospace";
+      ctx.textBaseline = "top";
+      ctx.fillStyle = "#fffaf2";
+      for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctx.fillText("탕탕!", 58 + ox, 58 + oy);
+      ctx.fillStyle = "#6b4430";
+      ctx.fillText("탕탕!", 58, 58);
+    }
+    ctx.restore();
+  }
+
+  // 성공: 빙글빙글 도는 햇살 + 반짝이 + 꽃가루
+  function fxHappy() {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const n = 12, spin = frame * 0.06;
+    for (let i = 0; i < n; i++) {
+      const a0 = (i / n) * Math.PI * 2 + spin, a1 = a0 + Math.PI / n;
+      ctx.beginPath();
+      ctx.moveTo(CENTER.x, CENTER.y);
+      ctx.lineTo(CENTER.x + Math.cos(a0) * 80, CENTER.y + Math.sin(a0) * 64);
+      ctx.lineTo(CENTER.x + Math.cos(a1) * 80, CENTER.y + Math.sin(a1) * 64);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(255, 236, 160, 0.30)";
+      ctx.fill();
+    }
+    glow("255, 245, 200", 0.5, 44, 38);
+    // 꽃가루가 팔랑팔랑 떨어져요
+    const colors = ["#f28482", "#ffd166", "#a8dadc", "#cdb4db", "#9cc59b"];
+    for (let i = 0; i < 14; i++) {
+      const x = 96 + ((i * 37) % 90) + Math.round(Math.sin((frame + i * 3) / 3) * 2);
+      const y = ((frame * 2 + i * 23) % 80) + 8;
+      dpx(x, y, 2, 2, colors[i % colors.length]);
+    }
+    ctx.restore();
+  }
+
+  // 실패: 머리 위 먹구름 + 보슬비 + 살짝 어두운 그늘
+  function fxSad() {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    glow("110, 130, 165", 0.35, 48, 42);
+    const cx = 130 + (frame % 8 < 4 ? 0 : 1), cy = 26;
+    // 구름
+    dpx(cx - 14, cy, 30, 7, "#8d99a6");
+    dpx(cx - 10, cy - 4, 12, 5, "#8d99a6");
+    dpx(cx + 1, cy - 6, 11, 7, "#8d99a6");
+    dpx(cx - 13, cy + 1, 28, 1, "#a5b0bb");
+    dpx(cx - 14, cy + 7, 30, 1, "#6e7a86");
+    // 빗방울
+    for (let i = 0; i < 6; i++) {
+      const x = cx - 11 + i * 5;
+      const y = cy + 9 + ((frame * 3 + i * 7) % 18);
+      dpx(x, y, 1, 3, "#7fb3d5");
+    }
+    ctx.restore();
+  }
+
   // ---------- 한 장면 그리기 ----------
   function draw() {
     frame++;
     ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
     drawRoom();
 
-    let lift = 0, swing = 0, face = frame % 28 === 0 ? "blink" : "normal";
     if (state === "working") {
-      // 뚝딱뚝딱: 망치를 크게 내리치고(앞으로 기울임) 다시 들어올리기
+      // 뚝딱뚝딱: 4장면 중 마지막이 "쾅" 내리치는 순간
       const step = frame % 4;
-      swing = [0, -0.3, -0.55, -0.3][step];
-      lift = step === 2 ? 0 : 2;
-    } else if (state === "reveal") {
-      lift = frame % 8 < 4 ? 1 : 0;          // 완성품 보여주며 두근두근
-      swing = -0.2;
-    } else if (state === "happy") {
-      lift = frame % 4 < 2 ? 4 : 0;          // 마음에 든대! 신나서 콩콩
-      swing = frame % 4 < 2 ? 0.2 : -0.1;    // 망치 흔들흔들
-      face = "happy";
-    } else {
-      lift = frame % 16 < 8 ? 1 : 0;         // 숨쉬듯 살짝
-    }
-
-    drawRaccoon(lift, swing, face);
-    drawBench();
-    drawBlock();
-
-    if (state === "working") {
-      updatePuffs(frame % 4 === 2);          // 내리칠 때 하트·별이 퐁
+      const impact = step === 3;
+      fxWork(impact);
+      if (!drawPose("work", 0, impact ? 2 : (step === 1 ? -1 : 0))) drawRaccoon(impact ? 0 : 2, impact ? -0.55 : 0, "normal");
+      drawBench();
+      drawBlock();
+      updatePuffs(impact);
       if (Math.floor(frame / 6) % 2 === 0) bubble(83, 13);
-    } else if (state === "reveal" || state === "happy") {
+    } else if (state === "happy") {
+      fxHappy();
+      const hop = frame % 4 < 2 ? 3 : 0;            // 신나서 콩콩
+      if (!drawPose("happy", 0, -hop)) drawRaccoon(hop, 0.2, "happy");
+      drawBench();
+      drawBlock();
       drawItem();
-      if (state === "happy") {
-        updatePuffs(frame % 3 === 0);
-        if (frame % 6 < 3) { heart(80, 14, C.heart); heart(86, 20, C.heart); }
-        else { heart(84, 12, C.heart); star(90, 17, 1); }
-      }
+    } else if (state === "sad") {
+      fxSad();
+      const sway = frame % 12 < 6 ? 0 : 1;          // 시무룩하게 살짝 흔들
+      if (!drawPose("sad", sway, 0)) drawRaccoon(0, 0, "blink");
+      drawBench();
+      drawBlock();
+      puffs = [];
+    } else if (state === "reveal") {
+      drawRaccoon(frame % 8 < 4 ? 1 : 0, -0.2, "normal");   // 완성품 보여주며 두근두근
+      drawBench();
+      drawBlock();
+      drawItem();
     } else {
+      drawRaccoon(frame % 16 < 8 ? 1 : 0, 0, frame % 28 === 0 ? "blink" : "normal");   // 숨쉬듯 살짝
+      drawBench();
+      drawBlock();
       puffs = [];
     }
   }
@@ -453,7 +576,8 @@ const Workshop = (() => {
       if (!reduce) setInterval(draw, 140);
     },
     // data: AI가 보낸 완성품 정보 { pixels, palette, emoji }
-    // happy: 손님이 마음에 든다고 했을 때 (눈웃음 ^^)
+    // 상태: idle(쉬는 중) / working(만드는 중) / reveal(완성품 보여주기)
+    //       happy(성공, 마음에 든대!) / sad(실패, 오류)
     setState(next, data) {
       state = next;
       if (next === "reveal") item = makeItem(data);

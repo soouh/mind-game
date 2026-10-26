@@ -134,7 +134,7 @@ async function askAI() {
       setButtons("question");
     }
   } catch (err) {
-    Workshop.setState("idle");
+    Workshop.setState("sad");
     $("dialog").classList.remove("thinking");
     say("앗, 연장이 부러졌어...");
     showMessage(err.name === "AbortError"
@@ -168,7 +168,10 @@ $("guess-yes").addEventListener("click", () => {
 // 완성품이 아닐 때
 $("guess-no").addEventListener("click", () => {
   history.push({ q: `완성품: ${current.item}`, a: "아니" });
-  nextTurn();
+  setButtons("none");
+  Workshop.setState("sad");
+  say("앗, 아니었구나... 다시 만들어 볼게!");
+  setTimeout(nextTurn, 1200);   // 잠깐 시무룩했다가 다시 뚝딱뚝딱
 });
 
 $("retry-btn").addEventListener("click", askAI);
@@ -190,7 +193,7 @@ function showResult(won) {
     $("result-text").textContent = `${current.item}, 마음에 쏙 들었다니 다행이야.`;
     $("reveal-form").hidden = true;
   } else {
-    Workshop.setState("idle");
+    Workshop.setState("sad");
     say("재료가 다 떨어졌어... 이번엔 내가 졌다!");
     $("result-title").textContent = "주문 실패";
     $("result-text").textContent = "20번을 다 썼는데도 못 만들었어. 원래 뭘 원했는지 알려줄래?";
