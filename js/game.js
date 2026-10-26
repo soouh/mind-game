@@ -125,7 +125,7 @@ async function askAI() {
     showMessage("");
 
     if (data.type === "guess") {
-      Workshop.setState("reveal", data.emoji);
+      Workshop.setState("reveal", data);
       say(`따란! ${data.item} 완성! 어때, 마음에 들어?`);
       setButtons("guess");
     } else {

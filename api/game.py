@@ -8,6 +8,7 @@
 from http.server import BaseHTTPRequestHandler
 import json
 import os
+import re
 import time
 
 import requests
@@ -19,7 +20,7 @@ MAX_QUESTIONS = 20
 CATEGORIES = {"동물", "음식", "물건", "아무거나"}
 ANSWERS = {"응", "아니", "모르겠어"}
 
-SYSTEM_PROMPT = """너는 "마음 공방"의 장인이야. 손님이 마음속으로 필요한 것(동물, 음식, 물건 등) 하나를 떠올렸어.
+SYSTEM_PROMPT = """너는 "마음 공방"의 너구리 장인이야. 손님이 마음속으로 필요한 것(동물, 음식, 물건 등) 하나를 떠올렸어.
 너는 주문을 받는 것처럼 질문해서, 손님이 떠올린 것을 맞혀 "만들어 줘야" 해. (사실상 스무고개야)
 
 말투와 규칙:
@@ -33,8 +34,37 @@ SYSTEM_PROMPT = """너는 "마음 공방"의 장인이야. 손님이 마음속�
 
 출력 형식: 아래 둘 중 하나의 JSON만 출력해. 설명이나 마크다운은 절대 붙이지 마.
 질문할 때: {"type": "question", "text": "털이 있어?"}
-완성품을 내놓을 때: {"type": "guess", "item": "고양이", "emoji": "🐱"}
-- item은 짧은 한국어 이름, emoji는 그 물건을 가장 잘 나타내는 이모지 1개."""
+완성품을 내놓을 때: {"type": "guess", "item": "사과", "emoji": "🍎", "palette": {...}, "pixels": [...]}
+
+완성품 규칙:
+- item: 짧은 한국어 이름. 최대한 구체적으로 (예: "수프"보다 "단호박 수프").
+- emoji: 그 물건과 가장 비슷한 이모지 1개 (그림이 망가졌을 때 대신 쓰여).
+- pixels: 완성품을 직접 그린 귀여운 도트 그림. 정확히 16줄, 각 줄은 정확히 16글자.
+  "."은 투명(빈칸), 나머지 글자는 palette에 있는 색이야.
+- palette: 소문자 한 글자 → "#RRGGBB" 색. 3~8가지 색. 진한 갈색 테두리 색을 꼭 넣어.
+- 그림은 가운데에 꽉 차게, 테두리를 두르고 안은 색으로 채워. 그 물건만의 특징(색, 모양, 내용물)이 잘 보이게.
+  예를 들어 단호박 수프면 그릇 안에 주황색 수프가 보여야 해.
+
+사과 예시 (형식 참고용, 그대로 따라 그리지 마):
+{"type": "guess", "item": "사과", "emoji": "🍎",
+ "palette": {"o": "#5a3a2a", "r": "#e5534b", "l": "#f28b82", "g": "#6fae5a", "b": "#8a5a3b"},
+ "pixels": [
+ "................",
+ "........bg......",
+ ".......bggg.....",
+ "....ooobooo.....",
+ "...orrrrrrrro...",
+ "..orlrrrrrrrro..",
+ "..orlrrrrrrrro..",
+ ".orrrrrrrrrrrro.",
+ ".orrrrrrrrrrrro.",
+ ".orrrrrrrrrrrro.",
+ ".orrrrrrrrrrrro.",
+ "..orrrrrrrrrro..",
+ "..orrrrrrrrrro..",
+ "...orrrooorro...",
+ "....ooo...oo....",
+ "................"]}"""
 
 
 def build_prompt(category, history):
@@ -71,9 +101,43 @@ def parse_ai_reply(text):
         if not item:
             raise ValueError("완성품 이름이 비어 있음")
         emoji = str(data.get("emoji", "")).strip()[:8] or "🎁"
-        return {"type": "guess", "item": item[:20], "emoji": emoji}
+        result = {"type": "guess", "item": item[:20], "emoji": emoji}
+        art = clean_pixel_art(data.get("palette"), data.get("pixels"))
+        if art:   # 그림이 멀쩡할 때만 보내고, 아니면 화면에서 이모지로 대신해요
+            result.update(art)
+        return result
 
     raise ValueError("type 오류")
+
+
+HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
+ART_SIZE = 16
+
+
+def clean_pixel_art(palette, pixels):
+    """AI가 그린 도트 그림을 검사하고, 크기가 조금 틀렸으면 16 x 16으로 맞춰요. 많이 망가졌으면 None."""
+    if not isinstance(palette, dict) or not isinstance(pixels, list) or len(pixels) < 8:
+        return None
+
+    colors = {}
+    for key, value in list(palette.items())[:10]:
+        if isinstance(key, str) and len(key) == 1 and key != "." and isinstance(value, str) and HEX_COLOR.match(value):
+            colors[key] = value
+    if len(colors) < 2:
+        return None
+
+    rows = []
+    for row in pixels[:ART_SIZE]:
+        row = str(row)
+        row = "".join(ch if ch in colors else "." for ch in row)   # 모르는 글자는 빈칸으로
+        rows.append(row[:ART_SIZE].ljust(ART_SIZE, "."))
+    while len(rows) < ART_SIZE:
+        rows.append("." * ART_SIZE)
+
+    filled = sum(ch != "." for row in rows for ch in row)
+    if filled < 30:   # 칠한 칸이 너무 적으면 그림이라고 보기 어려워요
+        return None
+    return {"palette": colors, "pixels": rows}
 
 
 def clean_history(raw):
@@ -141,8 +205,8 @@ class handler(BaseHTTPRequestHandler):
                 {"role": "user", "content": build_prompt(category, history)},
             ],
             "temperature": 0.7,
-            # 이 모델은 답하기 전에 속으로 생각하는데, 그 분량까지 포함한 최대 길이예요.
-            "max_completion_tokens": 1000,
+            # 이 모델은 답하기 전에 속으로 생각하는데, 그 분량과 도트 그림까지 포함한 최대 길이예요.
+            "max_completion_tokens": 2000,
             "reasoning_effort": "low",  # 생각은 짧게 → 빠른 응답
             "response_format": {"type": "json_object"},  # JSON으로만 답하게 하기
         }

@@ -2,6 +2,7 @@
 // 마음 공방 그림 그리기 (도트 애니메이션)
 // 96 x 64 칸짜리 작은 그림을 그린 뒤, CSS로 크게 늘려서 도트처럼 보이게 해요.
 // 상태: "idle"(쉬는 중) / "working"(뚝딱뚝딱) / "reveal"(완성품 짠!)
+// 완성품 그림은 AI가 직접 그린 16 x 16 도트 그림을 쓰고, 그림이 없거나 망가졌으면 이모지로 대신해요.
 // =========================================
 const Workshop = (() => {
   const W = 96;
@@ -16,9 +17,10 @@ const Workshop = (() => {
     jar1: "#a8dadc", jar2: "#f4a988", jar3: "#cdb4db", lid: "#8a5a3b", yarn: "#f28482", yarnLine: "#d96b6b",
     bulb: ["#ffd166", "#f4a988", "#a8dadc", "#cdb4db"],
     clock: "#fff4e6",
-    // 장인
-    skin: "#ffd9b8", cheek: "#f7a1a1", hat: "#f08a5d", hatLight: "#f7b27a", hair: "#8b5a3c",
-    eye: "#3b2a22", shine: "#ffffff", mouth: "#c0605a", shirt: "#9cc59b", apron: "#fff3df", pocket: "#f2c9a0",
+    // 너구리 장인
+    fur: "#b39f8c", furLight: "#f3e8da", mask: "#7d695c", earIn: "#f2a7a0", cheek: "#f7a1a1",
+    eye: "#2a1e18", shine: "#ffffff", nose: "#3b2a22", scarf: "#f08a5d", apron: "#fff3df", pocket: "#f2c9a0",
+    hat: "#f08a5d",
     // 작업 도구
     mallet: "#c98f5e", malletTop: "#e2b07e", handle: "#8a5a3b", block: "#a86b42", blockTop: "#c98f5e", ring: "#d9a676",
     star: "#ffd166", heart: "#f28482", white: "#fffaf2",
@@ -99,40 +101,54 @@ const Workshop = (() => {
     px(83, 6, 3, 4, C.jar1); px(83, 5, 3, 1, C.lid);
   }
 
-  // ---------- 장인 (동글동글 귀여운 얼굴) ----------
+  // ---------- 너구리 장인 ----------
   const CRAFTER = [
-    ".....oooooo.....",
-    "....ohhHHhho....",
-    "...ohhhhhhhho...",
+    "..oo........oo..",
+    ".ofpo......opfo.",
+    ".ofpfoooooofpfo.",
+    ".offffffffffffo.",
+    "offffffffffffffo",
+    "ofmmmmffffmmmmfo",
+    "ofmwemFFFFmwemfo",
+    "ofmeemFFFFmeemfo",
+    "ofFmmFFnnFFmmFfo",
+    "ofcFFFmFFmFFFcfo",
+    ".offFFFmmFFFffo.",
+    "..ooffffffffoo..",
     "..ohhhhhhhhhho..",
-    "..orrrrrrrrrro..",
-    ".orssssssssssro.",
-    ".osssssssssssso.",
-    ".osswesssswesso.",
-    ".osseesssseesso.",
-    ".occsssmmssscco.",
-    "..osssssssssso..",
-    "...oossssssoo...",
-    ".otaaaaaaaaaato.",
-    ".otaaaappaaaato.",
-    ".osaaaappaaaaso.",
-    ".otaaaaaaaaaato.",
-    ".otaaaaaaaaaato.",
+    ".ofaaaaaaaaaafo.",
+    ".ofaaaappaaaafo.",
+    "ofFaaaappaaaaFfo",
+    ".ofaaaaaaaaaafo.",
   ];
 
-  function drawCrafter(x, y, blink, happy) {
-    sprite(CRAFTER, x, y, {
-      o: C.line, h: C.hat, H: C.hatLight, r: C.hair, s: C.skin, c: C.cheek,
-      e: C.eye, w: C.shine, m: C.mouth, t: C.shirt, a: C.apron, p: C.pocket,
+  // 줄무늬 꼬리 (살랑살랑)
+  function drawTail(x, y, wag) {
+    const dy = wag ? -1 : 0;
+    const stripes = [C.fur, C.mask, C.fur, C.mask, C.fur];
+    stripes.forEach((color, i) => {
+      px(x + i, y + dy - i, 3, 3, C.line);
+      px(x + i, y + dy - i + 1, 2, 1, color);
     });
+    px(x + 5, y + dy - 5, 2, 2, C.line);
+  }
+
+  function drawCrafter(x, y, blink, happy) {
+    drawTail(x + 14, y + 14, frame % 10 < 5);
+    sprite(CRAFTER, x, y, {
+      o: C.line, f: C.fur, F: C.furLight, m: C.mask, p: C.earIn, c: C.cheek,
+      e: C.eye, w: C.shine, n: C.nose, h: C.scarf, a: C.apron,
+    });
+    // 앞치마 주머니
+    px(x + 7, y + 14, 2, 2, C.pocket);
     if (blink || happy) {
-      // 눈 감기(깜빡) 또는 웃는 눈 ^^
-      [[4, 7], [5, 7], [4, 8], [5, 8], [10, 7], [11, 7], [10, 8], [11, 8]].forEach(([dx, dy]) => px(x + dx, y + dy, 1, 1, C.skin));
+      [[3, 6], [4, 6], [3, 7], [4, 7], [11, 6], [12, 6], [11, 7], [12, 7]].forEach(([dx, dy]) => px(x + dx, y + dy, 1, 1, C.mask));
       if (happy) {
-        px(x + 4, y + 8, 1, 1, C.eye); px(x + 5, y + 7, 1, 1, C.eye); px(x + 6, y + 8, 1, 1, C.eye);
-        px(x + 9, y + 8, 1, 1, C.eye); px(x + 10, y + 7, 1, 1, C.eye); px(x + 11, y + 8, 1, 1, C.eye);
+        // 웃는 눈 ^^
+        px(x + 2, y + 7, 1, 1, C.eye); px(x + 3, y + 6, 2, 1, C.eye); px(x + 5, y + 7, 1, 1, C.eye);
+        px(x + 10, y + 7, 1, 1, C.eye); px(x + 11, y + 6, 2, 1, C.eye); px(x + 13, y + 7, 1, 1, C.eye);
       } else {
-        px(x + 4, y + 8, 2, 1, C.eye); px(x + 10, y + 8, 2, 1, C.eye);
+        px(x + 3, y + 7, 2, 1, C.eye); px(x + 11, y + 7, 2, 1, C.eye);
       }
     }
   }
@@ -203,19 +219,37 @@ const Workshop = (() => {
   }
 
   // ---------- 완성품 ----------
+  // 18 x 18 칸 그림을 2배로 키워서 작업대 위에 띄워요.
   function drawItem() {
     if (!item) return;
     const bob = frame % 8 < 4 ? 0 : 1;
-    px(31, 38, 20, 1, "rgba(107, 68, 48, 0.25)");
-    ctx.drawImage(item, 29, 13 + bob);
+    px(28, 38, 26, 1, "rgba(107, 68, 48, 0.25)");
+    ctx.drawImage(item, 23, 2 + bob, 36, 36);
     const s = frame % 6;
-    if (s < 3) { star(27, 16, 2); heart(52, 26, C.heart); }
-    else { star(54, 14, 2); heart(25, 30, C.heart); }
+    if (s < 3) { star(21, 10, 2); heart(57, 22, C.heart); }
+    else { star(58, 6, 2); heart(19, 26, C.heart); }
   }
 
-  // 이모지를 작은 도트 그림으로 바꾸기
-  function makePixelItem(emoji) {
-    const size = 24;
+  // AI가 그린 16 x 16 도트 그림을 캔버스로 바꾸기
+  function makeAiItem(pixels, palette) {
+    const c = document.createElement("canvas");
+    c.width = 18;
+    c.height = 18;
+    const g = c.getContext("2d");
+    pixels.forEach((row, y) => {
+      [...row].forEach((ch, x) => {
+        if (palette[ch]) {
+          g.fillStyle = palette[ch];
+          g.fillRect(x + 1, y + 1, 1, 1);
+        }
+      });
+    });
+    return c;
+  }
+
+  // 이모지를 작은 도트 그림으로 바꾸기 (AI 그림이 없을 때 대신 사용)
+  function makeEmojiItem(emoji) {
+    const size = 18;
     const c = document.createElement("canvas");
     c.width = size;
     c.height = size;
@@ -246,6 +280,11 @@ const Workshop = (() => {
     }
     g.putImageData(img, 0, 0);
     return c;
+  }
+
+  function makeItem(data) {
+    if (data && Array.isArray(data.pixels) && data.palette) return makeAiItem(data.pixels, data.palette);
+    return makeEmojiItem((data && data.emoji) || "🎁");
   }
 
   // ---------- 한 장면 그리기 ----------
@@ -281,9 +320,10 @@ const Workshop = (() => {
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (!reduce) setInterval(draw, 140);
     },
-    setState(next, emoji) {
+    // data: AI가 보낸 완성품 정보 { pixels, palette, emoji }
+    setState(next, data) {
       state = next;
-      item = next === "reveal" ? makePixelItem(emoji || "🎁") : null;
+      item = next === "reveal" ? makeItem(data) : null;
       if (ctx) draw();
     },
   };
