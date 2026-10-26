@@ -55,8 +55,8 @@ const Workshop = (() => {
   const POSES = {
     work:  { src: "images/raccoon-work.png",  x: 84,  y: 40 },     // 망치 든 모습
     hit:   { src: "images/raccoon-hit.png",   x: 84,  y: 40 },     // 탕! 내리친 순간 (불꽃)
-    happy: { src: "images/raccoon-happy.png", x: 100, y: 42 },
-    sad:   { src: "images/raccoon-sad.png",   x: 100, y: 42 },
+    happy: { src: "images/raccoon-happy.png", x: 105, y: 42 },
+    sad:   { src: "images/raccoon-sad.png",   x: 105, y: 42 },
   };
   Object.values(POSES).forEach((pose) => {
     pose.img = new Image();
@@ -534,7 +534,7 @@ const Workshop = (() => {
       const step = frame % 4;
       const impact = step === 3;
       fxWork(impact);
-      const drawn = impact ? drawPose("hit", 0, 2) : drawPose("work", 0, step === 1 ? -2 : 0);
+      const drawn = impact ? drawPose("hit", 0, 0) : drawPose("work", 0, 0);
       if (!drawn) drawRaccoon(impact ? 0 : 2, impact ? -0.55 : 0, "normal");
       drawBench();
       drawBlock();
@@ -542,25 +542,23 @@ const Workshop = (() => {
       if (Math.floor(frame / 6) % 2 === 0) bubble(83, 13);
     } else if (state === "happy") {
       fxHappy();
-      const hop = frame % 4 < 2 ? 4 : 0;            // 신나서 콩콩
-      if (!drawPose("happy", 0, -hop)) drawRaccoon(hop, 0.2, "happy");
+      if (!drawPose("happy", 0, 0)) drawRaccoon(0, 0, "happy");
       drawBench();
       drawBlock();
       drawItem();
     } else if (state === "sad") {
       fxSad();
-      const sway = frame % 12 < 6 ? 0 : 2;          // 시무룩하게 살짝 흔들
-      if (!drawPose("sad", sway, 0)) drawRaccoon(0, 0, "blink");
+      if (!drawPose("sad", 0, 0)) drawRaccoon(0, 0, "blink");
       drawBench();
       drawBlock();
       puffs = [];
     } else if (state === "reveal") {
-      drawRaccoon(frame % 8 < 4 ? 2 : 0, 0, "normal");      // 완성품 보여주며 두근두근
+      drawRaccoon(0, 0, "normal");      // 위치 고정
       drawBench();
       drawBlock();
       drawItem();
     } else {
-      drawRaccoon(frame % 16 < 8 ? 2 : 0, 0, frame % 28 === 0 ? "blink" : "normal");   // 숨쉬듯 살짝
+      drawRaccoon(0, 0, frame % 28 === 0 ? "blink" : "normal");   // 위치 고정
       drawBench();
       drawBlock();
       puffs = [];
