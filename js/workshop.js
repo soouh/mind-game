@@ -36,7 +36,7 @@ const Workshop = (() => {
   // 공방 그림보다 2배 촘촘한 도트라서, 캔버스를 2배 크기로 만들고 너구리만 원래 크기로 그려요.
   const SCALE = 2;
   const RACCOON_X = 102;    // 캔버스(2배 크기) 안에서 너구리 위치
-  const RACCOON_Y = 49;
+  const RACCOON_Y = 50;
   // 망치와 주먹: 그림에서 x 0~17, y 0~24 영역(귀 테두리 제외). 손목(15, 25)을 중심으로 휘둘러요.
   const ARM = { pivotX: 15, pivotY: 25 };
   const isArm = (x, y) => x <= 17 && y <= 24 && !(x >= 16 && y < 13);
@@ -53,7 +53,8 @@ const Workshop = (() => {
   // 상황별 너구리 그림 (캔버스 2배 격자 기준 위치)
   //  work: 망치질하는 모습 / happy: 성공했을 때 / sad: 실패했을 때
   const POSES = {
-    work:  { src: "images/raccoon-work.png",  x: 84,  y: 33 },
+    work:  { src: "images/raccoon-work.png",  x: 84,  y: 40 },     // 망치 든 모습
+    hit:   { src: "images/raccoon-hit.png",   x: 84,  y: 40 },     // 탕! 내리친 순간 (불꽃)
     happy: { src: "images/raccoon-happy.png", x: 100, y: 42 },
     sad:   { src: "images/raccoon-sad.png",   x: 100, y: 42 },
   };
@@ -533,32 +534,33 @@ const Workshop = (() => {
       const step = frame % 4;
       const impact = step === 3;
       fxWork(impact);
-      if (!drawPose("work", 0, impact ? 2 : (step === 1 ? -1 : 0))) drawRaccoon(impact ? 0 : 2, impact ? -0.55 : 0, "normal");
+      const drawn = impact ? drawPose("hit", 0, 2) : drawPose("work", 0, step === 1 ? -2 : 0);
+      if (!drawn) drawRaccoon(impact ? 0 : 2, impact ? -0.55 : 0, "normal");
       drawBench();
       drawBlock();
       updatePuffs(impact);
       if (Math.floor(frame / 6) % 2 === 0) bubble(83, 13);
     } else if (state === "happy") {
       fxHappy();
-      const hop = frame % 4 < 2 ? 3 : 0;            // 신나서 콩콩
+      const hop = frame % 4 < 2 ? 4 : 0;            // 신나서 콩콩
       if (!drawPose("happy", 0, -hop)) drawRaccoon(hop, 0.2, "happy");
       drawBench();
       drawBlock();
       drawItem();
     } else if (state === "sad") {
       fxSad();
-      const sway = frame % 12 < 6 ? 0 : 1;          // 시무룩하게 살짝 흔들
+      const sway = frame % 12 < 6 ? 0 : 2;          // 시무룩하게 살짝 흔들
       if (!drawPose("sad", sway, 0)) drawRaccoon(0, 0, "blink");
       drawBench();
       drawBlock();
       puffs = [];
     } else if (state === "reveal") {
-      drawRaccoon(frame % 8 < 4 ? 1 : 0, -0.2, "normal");   // 완성품 보여주며 두근두근
+      drawRaccoon(frame % 8 < 4 ? 2 : 0, 0, "normal");      // 완성품 보여주며 두근두근
       drawBench();
       drawBlock();
       drawItem();
     } else {
-      drawRaccoon(frame % 16 < 8 ? 1 : 0, 0, frame % 28 === 0 ? "blink" : "normal");   // 숨쉬듯 살짝
+      drawRaccoon(frame % 16 < 8 ? 2 : 0, 0, frame % 28 === 0 ? "blink" : "normal");   // 숨쉬듯 살짝
       drawBench();
       drawBlock();
       puffs = [];
