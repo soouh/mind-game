@@ -32,6 +32,14 @@ const Workshop = (() => {
   let item = null;
   let puffs = [];      // 망치질할 때 튀는 별·하트
 
+  // 너구리 장인 그림 (images/raccoon.png, 62 x 43 칸)
+  // 공방 그림보다 2배 촘촘한 도트라서, 캔버스를 2배 크기로 만들고 너구리만 원래 크기로 그려요.
+  const SCALE = 2;
+  const raccoon = new Image();
+  let raccoonReady = false;
+  raccoon.onload = () => { raccoonReady = true; };
+  raccoon.src = "images/raccoon.png";
+
   function px(x, y, w, h, color) {
     ctx.fillStyle = color;
     ctx.fillRect(x, y, w, h);
@@ -286,33 +294,48 @@ const Workshop = (() => {
     return makeEmojiItem((data && data.emoji) || "🎁");
   }
 
+  // 너구리 그림 그리기 (그림 파일을 못 불러오면 기존 도트 너구리로 대신)
+  function drawRaccoon(lift, blink, happy) {
+    if (!raccoonReady) {
+      drawCrafter(58, 27 - lift, blink, happy);
+      drawMallet(true, 56);
+      return;
+    }
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);       // 너구리는 촘촘한 도트 그대로
+    ctx.drawImage(raccoon, 102, 49 - lift);
+    ctx.restore();
+  }
+
   // ---------- 한 장면 그리기 ----------
   function draw() {
     frame++;
+    ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
     drawRoom();
-    const bounce = state === "working" && frame % 4 < 2 ? 1 : 0;   // 일할 때 들썩들썩
-    drawCrafter(58, 27 + bounce, frame % 28 === 0, state === "reveal");
+
+    let lift = 0;
+    if (state === "working") lift = frame % 4 < 2 ? 3 : 0;          // 뚝딱뚝딱 들썩들썩
+    else if (state === "reveal") lift = frame % 6 < 3 ? 2 : 0;      // 완성! 신나서 콩콩
+    else lift = frame % 16 < 8 ? 1 : 0;                              // 숨쉬듯 살짝
+
+    drawRaccoon(lift, frame % 28 === 0, state === "reveal");
     drawBench();
     drawBlock();
 
     if (state === "working") {
-      const up = frame % 4 < 2;
-      drawMallet(up, 56);
-      updatePuffs(!up);
-      if (Math.floor(frame / 6) % 2 === 0) bubble(74, 20);
+      updatePuffs(frame % 4 >= 2);
+      if (Math.floor(frame / 6) % 2 === 0) bubble(83, 13);
     } else if (state === "reveal") {
-      drawMallet(true, 56);
       drawItem();
     } else {
       puffs = [];
-      drawMallet(true, 56);
     }
   }
 
   return {
     init(canvas) {
-      canvas.width = W;
-      canvas.height = H;
+      canvas.width = W * SCALE;
+      canvas.height = H * SCALE;
       ctx = canvas.getContext("2d");
       ctx.imageSmoothingEnabled = false;
       draw();

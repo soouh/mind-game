@@ -28,7 +28,7 @@ js/workshop.js    도트 공방 애니메이션 (canvas)
 js/game.js        게임 진행, fetch('/api/game') 호출
 api/game.py       Groq API를 호출하는 Python 함수
 requirements.txt  Python 패키지 목록
-images/           파비콘
+images/           파비콘, 너구리 장인 그림(raccoon.png)
 ```
 
 ## 동작 흐름
@@ -44,6 +44,7 @@ API 키는 코드에 절대 넣지 않고 Vercel 환경 변수로 관리합니�
 |---|---|
 | `GROQ_API_KEY` | Groq Console에서 발급받은 API 키 (필수) |
 | `GROQ_MODEL` | 질문용 모델 이름 (선택, 기본값 `openai/gpt-oss-120b`) |
+| `GROQ_BACKUP_MODEL` | 기본 모델이 사용량 한도에 걸렸을 때 쓸 예비 모델 (선택, 기본값 `openai/gpt-oss-20b`) |
 | `GEMINI_API_KEY` | Google AI Studio에서 발급받은 API 키 (도트 그림용, 없으면 이모지 그림으로 대신) |
 | `GEMINI_ART_MODEL` | 그림용 모델 이름 (선택, 기본값 `gemini-3.1-flash-lite`) |
 
@@ -56,6 +57,8 @@ API 키는 코드에 절대 넣지 않고 Vercel 환경 변수로 관리합니�
 - 이후 응답 지연(504)과 서버 혼잡(503)이 반복되어, 응답 속도가 빠른 Groq API로 교체
 - Groq의 Llama 3.3 모델도 2026년 8월에 서비스 종료되어 502 오류 → Groq 공식 지원 종료 목록을 확인하고 권장 대체 모델(gpt-oss-120b)로 변경
 - AI에게 도트 그림까지 그리게 하자 응답 길이가 늘어 무료 사용량 초과(429) → 질문은 Groq, 그림은 Gemini로 역할을 나눠 사용량을 분산
+- 질문을 빠르게 주고받으면 Groq의 분당 토큰 한도에 걸려 429 → 무료 한도가 모델별로 따로 있는 점을 이용해, 한도에 걸리면 예비 모델(gpt-oss-20b)로 자동 전환
+- 너구리 장인 그림: 사이트 화면을 Gemini 앱에 보여주고 다시 그려 받은 이미지에서 너구리만 잘라 도트 크기로 줄이고 배경을 지워 사용
 
 키가 노출된 것 같으면 Groq Console에서 즉시 폐기하고 새로 발급한 뒤, Vercel 환경 변수를 새 키로 바꿔주세요.
 
