@@ -69,9 +69,41 @@ const Workshop = (() => {
     return true;
   }
 
-  // 배경 그림을 쓸 땐 작업대가 그림에 들어 있어서 따로 안 그려요.
+  // 나무 작업대: 완성품이 올라가는 자리 (배경과 같은 촘촘한 도트로, 캔버스 2배 격자에 그려요)
+  const TABLE = { x: 70, y: 78, w: 45 };          // 윗면 왼쪽 위 / 너비
+  let showTable = true;                           // 시작 화면에선 안 그려요
+  function drawWorkTable() {
+    const { x, y, w } = TABLE;
+    const ink = "#5a3a2a", top = "#d9a066", topLight = "#ecc08a", front = "#a86b42", frontDark = "#8a5536", leg = "#7a4a2e";
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const f = (a, b, c, d, col) => { ctx.fillStyle = col; ctx.fillRect(a, b, c, d); };
+    // 다리 (작업대 윗면 92줄까지)
+    for (const lx of [x + 3, x + w - 7]) {
+      f(lx - 1, y + 8, 6, 92 - (y + 8), ink);
+      f(lx, y + 8, 4, 92 - (y + 8), leg);
+      f(lx, y + 8, 1, 92 - (y + 8), front);
+    }
+    // 앞판
+    f(x - 1, y + 3, w + 2, 6, ink);
+    f(x, y + 4, w, 4, front);
+    for (let px2 = x + 8; px2 < x + w - 2; px2 += 9) f(px2, y + 4, 1, 4, frontDark);   // 판자 이음새
+    f(x, y + 7, w, 1, frontDark);
+    // 윗면
+    f(x - 2, y - 1, w + 4, 5, ink);
+    f(x - 1, y, w + 2, 3, top);
+    f(x, y, w, 1, topLight);
+    // 바닥 그림자
+    f(x - 1, 91, w + 2, 1, "rgba(60, 35, 20, 0.35)");
+    ctx.restore();
+  }
+
+  // 배경 그림을 쓸 땐 긴 작업대는 그림에 들어 있고, 완성품용 나무 작업대만 그려요.
   function drawBenchIfNeeded() {
-    if (backgroundReady) return;
+    if (backgroundReady) {
+      if (showTable) drawWorkTable();
+      return;
+    }
     drawBench();
     drawBlock();
   }
@@ -370,8 +402,8 @@ const Workshop = (() => {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = "rgba(90, 50, 30, 0.25)";
-    ctx.fillRect(68, 89, 32, 2);                       // 작업대 위 그림자
-    ctx.drawImage(item, 66, 52 + bob * 2, 36, 36);     // 18칸 그림을 2배로 (처음 크기의 절반)
+    ctx.fillRect(TABLE.x + 6, TABLE.y - 1, TABLE.w - 12, 1);       // 작업대 위 그림자
+    ctx.drawImage(item, TABLE.x + Math.round(TABLE.w / 2) - 18, TABLE.y - 36 - bob * 2, 36, 36);   // 18칸 그림을 2배로, 작업대 가운데
     ctx.restore();
     const s = frame % 6;
     if (s < 3) { star(30, 26, 2); heart(53, 30, C.heart); }
@@ -563,7 +595,44 @@ const Workshop = (() => {
   }
 
   // ---------- 한 장면 그리기 ----------
+  // 처음 열 때 예전 공방이 잠깐 보이지 않게, 배경과 너구리 그림이 다 올 때까지 기다려요.
+  // (3초가 지나도 안 오면 그때는 코드로 그린 공방으로 대신 보여줘요.)
+  // 0.3초 안에 다 오면 바로 보여주고, 늦어지면 "오픈 준비 중" 화면을 띄워요.
+  // 한번 띄우면 최소 0.8초는 보여줘서 깜빡이지 않게 해요. 8초가 지나도 안 오면 코드로 그린 공방으로 대신.
+  let waitedTooLong = false;
+  setTimeout(() => { waitedTooLong = true; hideOpening(); if (ctx) draw(); }, 8000);
+  function imagesReady() {
+    return backgroundReady && parts !== null;
+  }
+
+  let openingShownAt = 0;
+  let openingClosing = false;
+  function showOpening() {
+    const el = document.getElementById("opening");
+    if (!el || imagesReady()) return;
+    el.hidden = false;
+    openingShownAt = Date.now();
+  }
+  function hideOpening() {
+    const el = document.getElementById("opening");
+    if (!el || el.hidden || openingClosing) return;
+    openingClosing = true;
+    const wait = Math.max(0, 800 - (Date.now() - openingShownAt));
+    setTimeout(() => {
+      el.classList.add("fade");
+      setTimeout(() => { el.hidden = true; el.classList.remove("fade"); }, 300);
+    }, wait);
+  }
+  setTimeout(showOpening, 300);
+
   function draw() {
+    if (imagesReady()) hideOpening();
+    if (!imagesReady() && !waitedTooLong) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = "#c98f5e";                 // 그림 오기 전 잠깐: 나무색 빈 화면
+      ctx.fillRect(0, 0, W * SCALE, H * SCALE);
+      return;
+    }
     frame++;
     ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
     drawBackground();
@@ -574,18 +643,18 @@ const Workshop = (() => {
       const impact = step === 3;
       fxWork(impact);
       const drawn = impact ? drawPose("hit", 0, 0) : drawPose("work", 0, 0);   // 위치는 그대로, 그림만 바뀌어요
-      if (!drawn) drawRaccoon(impact ? 0 : 2, impact ? -0.55 : 0, "normal");
+      if (!drawn) drawRaccoon(0, 0, "normal");    // 망치질 그림이 아직 안 왔으면 평소 모습 그대로
       drawBenchIfNeeded();
       updatePuffs(impact);
       if (Math.floor(frame / 6) % 2 === 0) bubble(83, 13);
     } else if (state === "happy") {
       fxHappy();
-      if (!drawPose("happy", 0, 0)) drawRaccoon(0, 0.2, "happy");
+      if (!drawPose("happy", 0, 0)) drawRaccoon(0, 0, "normal");
       drawBenchIfNeeded();
       drawItem();
     } else if (state === "sad") {
       fxSad();
-      if (!drawPose("sad", 0, 0)) drawRaccoon(0, 0, "blink");
+      if (!drawPose("sad", 0, 0)) drawRaccoon(0, 0, "normal");
       drawBenchIfNeeded();
       puffs = [];
     } else if (state === "reveal") {
@@ -602,6 +671,7 @@ const Workshop = (() => {
   return {
     init(canvas) {
       background.src = canvas.dataset.bg || "images/workshop-bg.png";
+      showTable = !canvas.dataset.bg;             // 게임 화면에서만 나무 작업대
       canvas.width = W * SCALE;
       canvas.height = H * SCALE;
       ctx = canvas.getContext("2d");

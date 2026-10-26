@@ -5,10 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css">
+  <link rel="preload" as="image" href="images/workshop-bg.png">
+  <link rel="preload" as="image" href="images/raccoon.png">
   <link rel="stylesheet" href="css/style.css">
   <title>주문하기 - 밤티 공방</title>
 </head>
 <body>
+  <!-- 오픈 준비 화면: 공방 그림이 늦게 오면 잠깐 보여줘요 (js/workshop.js에서 켜고 꺼요) -->
+  <div id="opening" class="opening" hidden>
+    <div class="opening-art" role="img" aria-label="토끼와 너구리가 공방 오픈을 준비하는 그림"></div>
+    <h1 class="opening-title">오픈 준비 중이야!</h1>
+    <p class="opening-text">장인이 공방 문을 열기 위해<br>열심히 준비하고 있어! 잠시만 기다려 줘.</p>
+    <div class="opening-bar" aria-hidden="true"><span></span></div>
+    <p class="opening-loading">로딩 중... (LOADING...)</p>
+  </div>
   <header class="site-header">
     <a class="logo" href="index.html">내 마음이 들리니</a>
     <nav aria-label="메뉴">
